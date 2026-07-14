@@ -1,8 +1,18 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Dropdown from '../../components/Dropdown';
+
+const PROPERTY_TYPE_OPTIONS = [
+    { label: 'Hotel', value: 'hotel' },
+    { label: 'Resort', value: 'resort' },
+    { label: 'Villa', value: 'villa' },
+    { label: 'Hostel', value: 'hostel' },
+    { label: 'Apartment/Guesthouse', value: 'apartment' },
+    { label: 'Other', value: 'other' }
+];
 
 export default function HostProfileSetupScreen() {
     const [hostName, setHostName] = useState('');
@@ -15,6 +25,40 @@ export default function HostProfileSetupScreen() {
     const [images, setImages] = useState([
         { id: '1', isCover: true }
     ]);
+
+    const handleContinue = () => {
+        const trimmedHostName = hostName.trim();
+        const trimmedPropertyName = propertyName.trim();
+        const trimmedRooms = rooms.trim();
+        const trimmedLocation = location.trim();
+
+        if (!trimmedHostName) {
+            Alert.alert('Validation Error', 'Please enter the host name.');
+            return;
+        }
+
+        if (!trimmedPropertyName) {
+            Alert.alert('Validation Error', 'Please enter the property name.');
+            return;
+        }
+
+        if (!trimmedRooms) {
+            Alert.alert('Validation Error', 'Please enter the number of rooms.');
+            return;
+        }
+
+        if (isNaN(Number(trimmedRooms)) || Number(trimmedRooms) <= 0) {
+            Alert.alert('Validation Error', 'Please enter a valid positive number for rooms count.');
+            return;
+        }
+
+        if (!trimmedLocation) {
+            Alert.alert('Validation Error', 'Please enter the property location.');
+            return;
+        }
+
+        router.push('/screens/profileSuccess');
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -63,12 +107,13 @@ export default function HostProfileSetupScreen() {
                     {/* Property Type */}
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Property Type</Text>
-                        <Pressable style={styles.selectContainer}>
-                            <Text style={[styles.inputText, !propertyType && { color: '#889A92' }]}>
-                                {propertyType || 'Select type'}
-                            </Text>
-                            <Feather name="chevron-down" size={20} color="#3C4A42" />
-                        </Pressable>
+                        <Dropdown
+                            options={PROPERTY_TYPE_OPTIONS}
+                            value={propertyType}
+                            onSelect={setPropertyType}
+                            placeholder="Select type"
+                            style={styles.selectContainer}
+                        />
                     </View>
 
                     {/* Number of Rooms */}
@@ -141,7 +186,7 @@ export default function HostProfileSetupScreen() {
             <View style={styles.bottomBar}>
                 <Pressable
                     style={styles.continueButton}
-                    onPress={() => router.push('/screens/profileSuccess')}
+                    onPress={handleContinue}
                 >
                     <Text style={styles.continueButtonText}>Continue</Text>
                     <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />

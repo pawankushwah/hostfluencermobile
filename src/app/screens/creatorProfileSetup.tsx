@@ -1,8 +1,17 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Dropdown from '../../components/Dropdown';
+
+const CATEGORY_OPTIONS = [
+    { label: 'Travel & Adventure', value: 'travel' },
+    { label: 'Food & Culinary', value: 'food' },
+    { label: 'Luxury & Lifestyle', value: 'luxury' },
+    { label: 'Fashion & Beauty', value: 'fashion' },
+    { label: 'Photography & Videography', value: 'photography' }
+];
 
 export default function CreatorProfileSetupScreen() {
     const [username, setUsername] = useState('');
@@ -17,6 +26,67 @@ export default function CreatorProfileSetupScreen() {
     const [tiktokFollowers, setTiktokFollowers] = useState('');
 
     const [hasImage, setHasImage] = useState(false);
+
+    const handleContinue = () => {
+        const trimmedUsername = username.trim();
+        const trimmedLocation = location.trim();
+
+        if (!trimmedUsername) {
+            Alert.alert('Validation Error', 'Please enter your username.');
+            return;
+        }
+
+        if (!trimmedLocation) {
+            Alert.alert('Validation Error', 'Please enter your location.');
+            return;
+        }
+
+        const trimmedIgHandle = igHandle.trim();
+        const trimmedIgFollowers = igFollowers.trim();
+        const trimmedTiktokHandle = tiktokHandle.trim();
+        const trimmedTiktokFollowers = tiktokFollowers.trim();
+
+        const hasIg = trimmedIgHandle !== '';
+        const hasIgFollowers = trimmedIgFollowers !== '';
+        const hasTiktok = trimmedTiktokHandle !== '';
+        const hasTiktokFollowers = trimmedTiktokFollowers !== '';
+
+        if (hasIg && !hasIgFollowers) {
+            Alert.alert('Validation Error', 'Please enter your Instagram follower count.');
+            return;
+        }
+        if (!hasIg && hasIgFollowers) {
+            Alert.alert('Validation Error', 'Please enter your Instagram handle.');
+            return;
+        }
+        if (hasTiktok && !hasTiktokFollowers) {
+            Alert.alert('Validation Error', 'Please enter your TikTok follower count.');
+            return;
+        }
+        if (!hasTiktok && hasTiktokFollowers) {
+            Alert.alert('Validation Error', 'Please enter your TikTok handle.');
+            return;
+        }
+
+        const isIgComplete = hasIg && hasIgFollowers;
+        const isTiktokComplete = hasTiktok && hasTiktokFollowers;
+
+        if (!isIgComplete && !isTiktokComplete) {
+            Alert.alert('Validation Error', 'Please provide at least one complete social presence (Instagram or TikTok handle + follower count).');
+            return;
+        }
+
+        if (isIgComplete && (isNaN(Number(trimmedIgFollowers)) || Number(trimmedIgFollowers) < 0)) {
+            Alert.alert('Validation Error', 'Please enter a valid Instagram follower count.');
+            return;
+        }
+        if (isTiktokComplete && (isNaN(Number(trimmedTiktokFollowers)) || Number(trimmedTiktokFollowers) < 0)) {
+            Alert.alert('Validation Error', 'Please enter a valid TikTok follower count.');
+            return;
+        }
+
+        router.push('/screens/profileSuccess');
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -112,16 +182,12 @@ export default function CreatorProfileSetupScreen() {
                         {/* Content Category */}
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Content Category</Text>
-                            <Pressable style={[styles.inputContainer, { height: 44 }]}>
-                                <Text style={[
-                                    styles.input, 
-                                    !category && { color: '#A0A0A0' },
-                                    { height: undefined, textAlignVertical: 'center' }
-                                ]}>
-                                    {category || 'Select a focus...'}
-                                </Text>
-                                <Feather name="chevron-down" size={20} color="#0B1C30" />
-                            </Pressable>
+                            <Dropdown
+                                options={CATEGORY_OPTIONS}
+                                value={category}
+                                onSelect={setCategory}
+                                placeholder="Select a focus..."
+                            />
                         </View>
 
                         {/* Social Presence Section */}
@@ -191,7 +257,7 @@ export default function CreatorProfileSetupScreen() {
 
                         <Pressable
                             style={styles.continueButton}
-                            onPress={() => router.push('/screens/profileSuccess')}
+                            onPress={handleContinue}
                         >
                             <Text style={styles.continueButtonText}>Continue</Text>
                             <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />
