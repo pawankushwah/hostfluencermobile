@@ -103,7 +103,7 @@ export default function SignupScreen() {
                                 </View>
                             </View>
 
-                            <Pressable style={styles.loginButton}>
+                            <Pressable style={styles.loginButton} onPress={() => router.push('/screens/roleSelection')}>
                                 <Text style={styles.loginButtonText}>Create Account</Text>
                                 <Feather name="arrow-right" size={20} color="#FFF" style={styles.loginButtonIcon} />
                             </Pressable>
@@ -119,7 +119,7 @@ export default function SignupScreen() {
                         </View>
                     </View>
                 </View>
-                
+
                 <Text style={styles.brandText}>Hostfluencer</Text>
             </ScrollView>
         </SafeAreaView>
