@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
@@ -12,6 +12,34 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+
+    const handleLogin = () => {
+        const trimmedEmail = email.trim();
+        const trimmedPassword = password;
+
+        if (!trimmedEmail) {
+            Alert.alert('Validation Error', 'Please enter your email address.');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+            Alert.alert('Validation Error', 'Please enter a valid email address.');
+            return;
+        }
+
+        if (!trimmedPassword) {
+            Alert.alert('Validation Error', 'Please enter your password.');
+            return;
+        }
+
+        if (trimmedPassword.length < 6) {
+            Alert.alert('Validation Error', 'Password must be at least 6 characters.');
+            return;
+        }
+
+        router.push('/screens/roleSelection');
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -86,7 +114,7 @@ export default function LoginScreen() {
                                 <Text style={styles.checkboxLabel}>Remember me for 30 days</Text>
                             </Pressable>
 
-                            <Pressable style={styles.loginButton}>
+                            <Pressable style={styles.loginButton} onPress={handleLogin}>
                                 <Text style={styles.loginButtonText}>Login</Text>
                                 <Feather name="arrow-right" size={20} color="#FFF" style={styles.loginButtonIcon} />
                             </Pressable>

@@ -21,9 +21,10 @@ type DropdownProps = {
     onSelect: (value: string) => void;
     placeholder?: string;
     leftIcon?: React.ReactNode;
+    style?: any;
 };
 
-export default function Dropdown({ options, value, onSelect, placeholder = 'Select...', leftIcon }: DropdownProps) {
+export default function Dropdown({ options, value, onSelect, placeholder = 'Select...', leftIcon, style }: DropdownProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     const selectedOption = options.find((opt) => opt.value === value);
@@ -35,7 +36,7 @@ export default function Dropdown({ options, value, onSelect, placeholder = 'Sele
 
     return (
         <>
-            <Pressable style={styles.inputContainer} onPress={() => setIsVisible(true)}>
+            <Pressable style={[styles.inputContainer, style]} onPress={() => setIsVisible(true)}>
                 {leftIcon && <View style={styles.leftIconContainer}>{leftIcon}</View>}
                 <Text style={[styles.input, !selectedOption && { color: '#A0A0A0' }]}>
                     {selectedOption ? selectedOption.label : placeholder}

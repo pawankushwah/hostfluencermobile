@@ -1,8 +1,25 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Dropdown from '../../components/Dropdown';
+
+const INDUSTRY_OPTIONS = [
+    { label: 'Hotels & Lodging', value: 'hotels' },
+    { label: 'Food & Beverage', value: 'food' },
+    { label: 'Travel & Tourism', value: 'travel' },
+    { label: 'Fashion & Lifestyle', value: 'fashion' },
+    { label: 'Technology', value: 'tech' }
+];
+
+const COMPANY_SIZE_OPTIONS = [
+    { label: '1 - 10 employees', value: '1-10' },
+    { label: '11 - 50 employees', value: '11-50' },
+    { label: '51 - 200 employees', value: '51-200' },
+    { label: '201 - 500 employees', value: '201-500' },
+    { label: '500+ employees', value: '500+' }
+];
 
 export default function BrandProfileSetupScreen() {
     const [brandName, setBrandName] = useState('');
@@ -13,6 +30,28 @@ export default function BrandProfileSetupScreen() {
     const [description, setDescription] = useState('');
 
     const [hasImage, setHasImage] = useState(false);
+
+    const handleContinue = () => {
+        const trimmedBrandName = brandName.trim();
+        const trimmedDescription = description.trim();
+
+        if (!trimmedBrandName) {
+            Alert.alert('Validation Error', 'Please enter the brand name.');
+            return;
+        }
+
+        if (!industry) {
+            Alert.alert('Validation Error', 'Please select your industry.');
+            return;
+        }
+
+        if (!trimmedDescription) {
+            Alert.alert('Validation Error', 'Please enter a brand description.');
+            return;
+        }
+
+        router.push('/screens/profileSuccess');
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -68,33 +107,25 @@ export default function BrandProfileSetupScreen() {
                         {/* Industry */}
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Industry <Text style={styles.required}>*</Text></Text>
-                            <Pressable style={styles.inputContainer}>
-                                <MaterialCommunityIcons name="shape-outline" size={20} color="#6C7A72" style={styles.inputIcon} />
-                                <Text style={[
-                                    styles.input, 
-                                    !industry && { color: '#A0A0A0' },
-                                    { height: undefined, textAlignVertical: 'center' }
-                                ]}>
-                                    {industry || 'Select industry'}
-                                </Text>
-                                <Feather name="chevron-down" size={20} color="#6C7A72" />
-                            </Pressable>
+                            <Dropdown
+                                options={INDUSTRY_OPTIONS}
+                                value={industry}
+                                onSelect={setIndustry}
+                                placeholder="Select industry"
+                                leftIcon={<MaterialCommunityIcons name="shape-outline" size={20} color="#6C7A72" />}
+                            />
                         </View>
 
                         {/* Company Size */}
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Company Size</Text>
-                            <Pressable style={styles.inputContainer}>
-                                <Feather name="users" size={20} color="#6C7A72" style={styles.inputIcon} />
-                                <Text style={[
-                                    styles.input, 
-                                    !companySize && { color: '#A0A0A0' },
-                                    { height: undefined, textAlignVertical: 'center' }
-                                ]}>
-                                    {companySize || 'Select size'}
-                                </Text>
-                                <Feather name="chevron-down" size={20} color="#6C7A72" />
-                            </Pressable>
+                            <Dropdown
+                                options={COMPANY_SIZE_OPTIONS}
+                                value={companySize}
+                                onSelect={setCompanySize}
+                                placeholder="Select size"
+                                leftIcon={<Feather name="users" size={20} color="#6C7A72" />}
+                            />
                         </View>
 
                         {/* Website */}
@@ -159,7 +190,7 @@ export default function BrandProfileSetupScreen() {
                             
                             <Pressable 
                                 style={styles.continueButton}
-                                onPress={() => router.push('/screens/profileSuccess')}
+                                onPress={handleContinue}
                             >
                                 <Text style={styles.continueButtonText}>Continue</Text>
                                 <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />

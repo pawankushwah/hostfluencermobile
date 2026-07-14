@@ -3,7 +3,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignupScreen() {
@@ -13,6 +13,52 @@ export default function SignupScreen() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
+    const handleSignup = () => {
+        const trimmedFirstName = firstName.trim();
+        const trimmedLastName = lastName.trim();
+        const trimmedEmail = email.trim();
+        const trimmedPassword = password;
+        const trimmedConfirmPassword = confirmPassword;
+
+        if (!trimmedFirstName) {
+            Alert.alert('Validation Error', 'Please enter your first name.');
+            return;
+        }
+
+        if (!trimmedLastName) {
+            Alert.alert('Validation Error', 'Please enter your last name.');
+            return;
+        }
+
+        if (!trimmedEmail) {
+            Alert.alert('Validation Error', 'Please enter your email address.');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+            Alert.alert('Validation Error', 'Please enter a valid email address.');
+            return;
+        }
+
+        if (!trimmedPassword) {
+            Alert.alert('Validation Error', 'Please enter a password.');
+            return;
+        }
+
+        if (trimmedPassword.length < 6) {
+            Alert.alert('Validation Error', 'Password must be at least 6 characters.');
+            return;
+        }
+
+        if (trimmedPassword !== trimmedConfirmPassword) {
+            Alert.alert('Validation Error', 'Passwords do not match.');
+            return;
+        }
+
+        router.push('/screens/roleSelection');
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -103,7 +149,7 @@ export default function SignupScreen() {
                                 </View>
                             </View>
 
-                            <Pressable style={styles.loginButton} onPress={() => router.push('/screens/roleSelection')}>
+                            <Pressable style={styles.loginButton} onPress={handleSignup}>
                                 <Text style={styles.loginButtonText}>Create Account</Text>
                                 <Feather name="arrow-right" size={20} color="#FFF" style={styles.loginButtonIcon} />
                             </Pressable>
