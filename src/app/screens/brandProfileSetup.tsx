@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import Dropdown from '../../components/Dropdown';
 
 const INDUSTRY_OPTIONS = [
@@ -29,7 +31,26 @@ export default function BrandProfileSetupScreen() {
     const [socialLink, setSocialLink] = useState('');
     const [description, setDescription] = useState('');
 
-    const [hasImage, setHasImage] = useState(false);
+    const [logoImage, setLogoImage] = useState<string | null>(null);
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to upload images.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setLogoImage(result.assets[0].uri);
+        }
+    };
 
     const handleContinue = () => {
         const trimmedBrandName = brandName.trim();
@@ -74,10 +95,10 @@ export default function BrandProfileSetupScreen() {
                 <View style={styles.card}>
                     {/* Upload Section */}
                     <View style={styles.uploadSection}>
-                        <Pressable style={styles.imagePlaceholder} onPress={() => setHasImage(!hasImage)}>
-                            {hasImage ? (
+                        <Pressable style={styles.imagePlaceholder} onPress={pickImage}>
+                            {logoImage ? (
                                 <View style={styles.mockImage}>
-                                    <Feather name="check" size={24} color="#0D2C21" />
+                                    <Image source={{ uri: logoImage }} style={styles.avatarImage} />
                                 </View>
                             ) : (
                                 <>
@@ -289,6 +310,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#D1E0E8',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 50,
     },
     uploadText: {
         fontSize: 11,

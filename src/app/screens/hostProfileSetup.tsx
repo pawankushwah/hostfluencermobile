@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import Dropdown from '../../components/Dropdown';
 
 const PROPERTY_TYPE_OPTIONS = [
@@ -22,9 +24,30 @@ export default function HostProfileSetupScreen() {
     const [location, setLocation] = useState('');
     const [website, setWebsite] = useState('');
 
-    const [images, setImages] = useState([
-        { id: '1', isCover: true }
-    ]);
+    const [images, setImages] = useState<string[]>([]);
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to upload images.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsMultipleSelection: true,
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const newUris = result.assets.map(asset => asset.uri);
+            setImages(prev => [...prev, ...newUris]);
+        }
+    };
+
+    const removeImage = (uriToRemove: string) => {
+        setImages(prev => prev.filter(uri => uri !== uriToRemove));
+    };
 
     const handleContinue = () => {
         const trimmedHostName = hostName.trim();
@@ -174,10 +197,24 @@ export default function HostProfileSetupScreen() {
 
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.imageScrollContainer}>
                         {/* Upload Button */}
-                        <Pressable style={styles.uploadBox}>
+                        <Pressable style={styles.uploadBox} onPress={pickImage}>
                             <MaterialCommunityIcons name="image-plus" size={24} color="#0B1C30" style={{ marginBottom: 4 }} />
                             <Text style={styles.uploadText}>Upload</Text>
                         </Pressable>
+
+                        {images.map((uri, index) => (
+                            <View key={uri} style={styles.imageBox}>
+                                <Image source={{ uri }} style={styles.mockImageContent} />
+                                {index === 0 && (
+                                    <View style={styles.coverBadge}>
+                                        <Text style={styles.coverBadgeText}>COVER</Text>
+                                    </View>
+                                )}
+                                <Pressable style={styles.deleteButton} onPress={() => removeImage(uri)}>
+                                    <Feather name="x" size={14} color="#0B1C30" />
+                                </Pressable>
+                            </View>
+                        ))}
                     </ScrollView>
                 </View>
 

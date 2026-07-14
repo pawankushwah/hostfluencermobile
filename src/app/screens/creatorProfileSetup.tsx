@@ -1,4 +1,6 @@
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -25,7 +27,26 @@ export default function CreatorProfileSetupScreen() {
     const [tiktokHandle, setTiktokHandle] = useState('');
     const [tiktokFollowers, setTiktokFollowers] = useState('');
 
-    const [hasImage, setHasImage] = useState(false);
+    const [profileImage, setProfileImage] = useState<string | null>(null);
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to upload images.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setProfileImage(result.assets[0].uri);
+        }
+    };
 
     const handleContinue = () => {
         const trimmedUsername = username.trim();
@@ -113,10 +134,10 @@ export default function CreatorProfileSetupScreen() {
                 <View style={styles.card}>
                     {/* Upload Section */}
                     <View style={styles.uploadSection}>
-                        <Pressable style={styles.imagePlaceholder} onPress={() => setHasImage(!hasImage)}>
-                            {hasImage ? (
+                        <Pressable style={styles.imagePlaceholder} onPress={pickImage}>
+                            {profileImage ? (
                                 <View style={styles.mockImage}>
-                                    <Feather name="check" size={24} color="#0D2C21" />
+                                    <Image source={{ uri: profileImage }} style={styles.avatarImage} />
                                 </View>
                             ) : (
                                 <>
@@ -371,6 +392,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#E5EEFF',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 50,
     },
     uploadText: {
         fontSize: 12,
