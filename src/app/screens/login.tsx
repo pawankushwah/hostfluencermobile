@@ -123,7 +123,7 @@ export default function LoginScreen() {
                         <View style={styles.divider} />
 
                         <View style={styles.footer}>
-                            <Text style={styles.footerText}>Don't have an account? </Text>
+                            <Text style={styles.footerText}>{"Don't have an account? "}</Text>
                             <Pressable onPress={() => router.replace('/screens/signup')}>
                                 <Text style={styles.createAccountText}>Create Account</Text>
                             </Pressable>

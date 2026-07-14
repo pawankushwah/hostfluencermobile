@@ -1,7 +1,7 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -9,13 +9,13 @@ const { width } = Dimensions.get('window');
 const GLOW_SVG = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHJhZGlhbEdyYWRpZW50IGlkPSJnIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNBN0U0QjYiIHN0b3Atb3BhY2l0eT0iMC42Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjQTdFNEI2IiBzdG9wLW9wYWNpdHk9IjAiLz48L3JhZGlhbEdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIyMDAiIHI9IjIwMCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==`;
 
 export default function SplashScreen() {
-    const progress = useRef(new Animated.Value(0)).current;
+    const [progress] = useState(() => new Animated.Value(0));
 
     // Animated values for floating icons
-    const float1 = useRef(new Animated.Value(0)).current;
-    const float2 = useRef(new Animated.Value(0)).current;
-    const float3 = useRef(new Animated.Value(0)).current;
-    const float4 = useRef(new Animated.Value(0)).current;
+    const [float1] = useState(() => new Animated.Value(0));
+    const [float2] = useState(() => new Animated.Value(0));
+    const [float3] = useState(() => new Animated.Value(0));
+    const [float4] = useState(() => new Animated.Value(0));
 
     useEffect(() => {
         const createFloatAnimation = (animValue: Animated.Value, duration: number) => {
@@ -48,7 +48,7 @@ export default function SplashScreen() {
             // Once loading completes, navigate to introduction
             router.replace('/screens/introduction');
         });
-    }, []);
+    }, [float1, float2, float3, float4, progress]);
 
     // Interpolate progress value to width percentage
     const widthInterpolated = progress.interpolate({

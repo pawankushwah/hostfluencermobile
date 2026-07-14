@@ -98,7 +98,7 @@ export default function HostProfileSetupScreen() {
             <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Tell us about your{'\n'}property</Text>
-                    <Text style={styles.subtitle}>Let's set up your profile so influencers can find you.</Text>
+                    <Text style={styles.subtitle}>{"Let's set up your profile so influencers can find you."}</Text>
                 </View>
 
                 {/* Card 1: Basic Info */}
