@@ -61,13 +61,13 @@ export default function IntroductionScreen() {
         return () => clearInterval(timer);
     }, [currentIndex]);
 
-    const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    const [onViewableItemsChanged] = useState(() => ({ viewableItems }: any) => {
         if (viewableItems && viewableItems.length > 0) {
             setCurrentIndex(viewableItems[0].index);
         }
-    }).current;
+    });
 
-    const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+    const [viewConfig] = useState(() => ({ viewAreaCoveragePercentThreshold: 50 }));
 
     const realIndex = currentIndex % SLIDES.length;
 

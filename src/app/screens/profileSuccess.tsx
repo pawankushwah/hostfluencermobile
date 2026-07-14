@@ -20,7 +20,7 @@ export default function ProfileSuccessScreen() {
 
                 {/* Text Content */}
                 <View style={styles.textContainer}>
-                    <Text style={styles.title}>You're Ready To{'\n'}Collaborate</Text>
+                    <Text style={styles.title}>{"You're Ready To"}{'\n'}Collaborate</Text>
                     <Text style={styles.subtitle}>
                         Your Hostfluencer profile has been created{'\n'}successfully.
                     </Text>

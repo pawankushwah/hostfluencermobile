@@ -29,7 +29,7 @@ export default function LoginOptionsScreen() {
                     <View style={styles.contentContainer}>
                         <View style={styles.header}>
                             <Text style={styles.title}>Welcome to{'\n'}Hostfluencer</Text>
-                            <Text style={styles.subtitle}>Choose how you'd like to continue.</Text>
+                            <Text style={styles.subtitle}>{"Choose how you'd like to continue."}</Text>
                         </View>
 
                         <View style={styles.socialButtons}>
