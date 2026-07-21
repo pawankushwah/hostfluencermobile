@@ -1,11 +1,15 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import * as React from 'react';
+import { useRef, useState } from 'react';
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width, height } = Dimensions.get('window');
+const TypedFlatList = FlatList as any;
+const TypedView = View as any;
+
+const { width } = Dimensions.get('window');
 
 const SLIDES = [
     {
@@ -79,21 +83,21 @@ export default function IntroductionScreen() {
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
             <View style={styles.container}>
                 <View style={styles.carouselWrapper}>
-                    <FlatList
+                    <TypedFlatList
                         ref={flatListRef}
                         data={INF_SLIDES}
-                        keyExtractor={(_, index) => index.toString()}
+                        keyExtractor={(_: any, index: number) => index.toString()}
                         horizontal
                         pagingEnabled
                         showsHorizontalScrollIndicator={false}
                         onViewableItemsChanged={onViewableItemsChanged}
                         viewabilityConfig={viewConfig}
                         initialScrollIndex={INITIAL_INDEX}
-                        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+                        getItemLayout={(_: any, index: number) => ({ length: width, offset: width * index, index })}
                         bounces={false}
                         onScrollBeginDrag={() => { isDragging.current = true; }}
                         onScrollEndDrag={() => { isDragging.current = false; }}
-                        renderItem={({ item }) => (
+                        renderItem={({ item }: any) => (
                             <View style={styles.illustrationContainer}>
                                 <Image
                                     source={item.image}
@@ -110,7 +114,7 @@ export default function IntroductionScreen() {
                     {/* Pagination Dots */}
                     <View style={styles.paginationContainer}>
                         {SLIDES.map((_, index) => (
-                            <View
+                            <TypedView
                                 key={index}
                                 style={[
                                     styles.dot,

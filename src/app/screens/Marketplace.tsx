@@ -1,6 +1,7 @@
 import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { 
     ScrollView, 
     StyleSheet, 
@@ -11,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+
+const TypedView = View as any;
 
 const creatorsData = [
     {
@@ -355,7 +358,7 @@ export default function MarketplaceScreen() {
                         </View>
 
                         {creatorsData.map((item) => (
-                            <View key={item.id} style={styles.creatorListItem}>
+                            <TypedView key={item.id} style={styles.creatorListItem}>
                                 {/* Ring border conditional wrapper */}
                                 <View style={[
                                     styles.creatorAvatarContainer,
@@ -396,7 +399,7 @@ export default function MarketplaceScreen() {
                                         <Text style={styles.inviteBtnOutlineText}>Invite</Text>
                                     </TouchableOpacity>
                                 )}
-                            </View>
+                            </TypedView>
                         ))}
                     </>
                 )}
@@ -455,7 +458,7 @@ export default function MarketplaceScreen() {
                         </View>
 
                         {brandsCampaignsData.map((item) => (
-                            <View key={item.id} style={styles.campaignListItem}>
+                            <TypedView key={item.id} style={styles.campaignListItem}>
                                 <View style={[styles.campaignAvatar, { backgroundColor: item.avatarBg }]}>
                                     <Text style={[styles.campaignAvatarText, { color: item.avatarTextColor }]}>{item.initial}</Text>
                                 </View>
@@ -466,7 +469,7 @@ export default function MarketplaceScreen() {
                                     
                                     <View style={styles.campaignBadgesRow}>
                                         {item.badges.map((badge, index) => (
-                                            <View 
+                                            <TypedView 
                                                 key={index} 
                                                 style={[
                                                     styles.pillBadge, 
@@ -475,7 +478,7 @@ export default function MarketplaceScreen() {
                                                 ]}
                                             >
                                                 <Text style={[styles.pillBadgeText, { color: badge.color }]}>{badge.text}</Text>
-                                            </View>
+                                            </TypedView>
                                         ))}
                                     </View>
                                 </View>
@@ -490,7 +493,7 @@ export default function MarketplaceScreen() {
                                     )}
                                     <Text style={styles.campaignDaysText}>{item.daysLeft}</Text>
                                 </View>
-                            </View>
+                            </TypedView>
                         ))}
                     </>
                 )}
