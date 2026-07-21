@@ -44,7 +44,7 @@ export default function RoleSelectionScreen() {
         } else if (selectedRole === 'host') {
             router.push('/screens/hostProfileSetup');
         } else if (selectedRole) {
-            router.push('/screens/home');
+            router.push('/screens/Dashboard' as any);
         }
     };
 

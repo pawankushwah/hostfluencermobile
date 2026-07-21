@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+const ExpoImage = Image as any;
+
 export default function ProfileSuccessScreen() {
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -11,7 +13,7 @@ export default function ProfileSuccessScreen() {
                 
                 {/* Illustration Placeholder */}
                 <View style={styles.illustrationContainer}>
-                    <Image 
+                    <ExpoImage 
                         source={require('../../../assets/screen/bro.svg')} 
                         style={styles.illustrationImage} 
                         contentFit="contain"
@@ -57,7 +59,7 @@ export default function ProfileSuccessScreen() {
             <View style={styles.bottomBar}>
                 <Pressable 
                     style={styles.dashboardButton}
-                    onPress={() => router.push('/screens/home')}
+                    onPress={() => router.push('/screens/Dashboard' as any)}
                 >
                     <Text style={styles.dashboardButtonText}>Go To Dashboard</Text>
                     <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />
