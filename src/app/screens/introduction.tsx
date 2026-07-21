@@ -52,7 +52,7 @@ export default function IntroductionScreen() {
 
     // Auto-scroll logic
     React.useEffect(() => {
-        let timer: NodeJS.Timeout;
+        let timer: ReturnType<typeof setInterval>;
         if (!isDragging.current) {
             timer = setInterval(() => {
                 flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });

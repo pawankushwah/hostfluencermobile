@@ -57,7 +57,7 @@ export default function ProfileSuccessScreen() {
             <View style={styles.bottomBar}>
                 <Pressable 
                     style={styles.dashboardButton}
-                    onPress={() => router.push('/screens/home')}
+                    onPress={() => router.push('/screens/Dashboard' as any)}
                 >
                     <Text style={styles.dashboardButtonText}>Go To Dashboard</Text>
                     <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />

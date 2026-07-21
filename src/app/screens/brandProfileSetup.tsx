@@ -204,7 +204,7 @@ export default function BrandProfileSetupScreen() {
                         <View style={styles.actionButtonsContainer}>
                             <Pressable 
                                 style={styles.skipButton}
-                                onPress={() => router.push('/screens/home')}
+                                onPress={() => router.push('/screens/Dashboard' as any)}
                             >
                                 <Text style={styles.skipButtonText}>Skip for now</Text>
                             </Pressable>
