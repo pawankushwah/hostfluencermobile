@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as React from 'react';
 import { useState } from 'react';
@@ -115,7 +115,7 @@ export default function HomeScreen() {
                     <Text style={styles.pillText}>Travel Creator</Text>
                 </View>
                 <View style={styles.pillTagVerified}>
-                    <Ionicons name="shield-checkmark" size={14} color="#0E7A57" style={{ marginRight: 4 }} />
+                    <MaterialCommunityIcons name="check-decagram-outline" size={14} color="#0E7A57" style={{ marginRight: 4 }} />
                     <Text style={styles.pillText}>Verified Creator</Text>
                 </View>
             </View>
@@ -136,7 +136,7 @@ export default function HomeScreen() {
                     <View style={styles.levelHeader}>
                         <Text style={styles.levelLabel}>CURRENT LEVEL</Text>
                         <TouchableOpacity style={styles.historyBtn}>
-                            <Text style={styles.historyBtnText}>+ HISTORY</Text>
+                            <Text style={styles.historyBtnText}>↗ +120 pts</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -155,8 +155,7 @@ export default function HomeScreen() {
                     <View style={styles.progressFooter}>
                         <Text style={styles.progressLimitText}>Seedling</Text>
                         <View style={styles.nextLevelLink}>
-                            <Text style={styles.nextLevelLinkText}>Explorer</Text>
-                            <Feather name="chevron-right" size={14} color="#FFF" />
+                            <Text style={styles.nextLevelLinkText}>Explorer 🔒</Text>
                         </View>
                     </View>
 
@@ -166,21 +165,21 @@ export default function HomeScreen() {
 
                     <View style={styles.benefitItem}>
                         <View style={styles.benefitCheck}>
-                            <Feather name="check" size={10} color="#0A3F2C" />
+                            <Feather name="check" size={10} color="#E7B25C" />
                         </View>
                         <Text style={styles.benefitText}>Priority on applications</Text>
                     </View>
 
                     <View style={styles.benefitItem}>
                         <View style={styles.benefitCheck}>
-                            <Feather name="check" size={10} color="#0A3F2C" />
+                            <Feather name="check" size={10} color="#E7B25C" />
                         </View>
                         <Text style={styles.benefitText}>Owner visibility 10 hours</Text>
                     </View>
 
                     <View style={styles.benefitItem}>
                         <View style={styles.benefitCheck}>
-                            <Feather name="check" size={10} color="#0A3F2C" />
+                            <Feather name="check" size={10} color="#E7B25C" />
                         </View>
                         <Text style={styles.benefitText}>Host trust badge</Text>
                     </View>
@@ -281,6 +280,9 @@ export default function HomeScreen() {
 
                 <View style={styles.performanceRow}>
                     <View style={styles.performanceCard}>
+                        <View style={[styles.performanceIconCircle, { backgroundColor: '#E8F1EC' }]}>
+                            <Feather name="send" size={16} color="#0E7A57" />
+                        </View>
                         <Text style={styles.performanceValue}>48</Text>
                         <Text style={styles.performanceLabel}>Applications</Text>
                         <View style={styles.performanceTrend}>
@@ -289,6 +291,9 @@ export default function HomeScreen() {
                     </View>
 
                     <View style={styles.performanceCard}>
+                        <View style={[styles.performanceIconCircle, { backgroundColor: '#E8F1EC' }]}>
+                            <Feather name="briefcase" size={16} color="#0E7A57" />
+                        </View>
                         <Text style={styles.performanceValue}>12</Text>
                         <Text style={styles.performanceLabel}>Collaborations</Text>
                         <View style={styles.performanceTrend}>
@@ -297,8 +302,11 @@ export default function HomeScreen() {
                     </View>
 
                     <View style={styles.performanceCard}>
+                        <View style={[styles.performanceIconCircle, { backgroundColor: '#FAF2E6' }]}>
+                            <Feather name="clock" size={16} color="#E7B25C" />
+                        </View>
                         <Text style={styles.performanceValue}>5</Text>
-                        <Text style={styles.performanceLabel}>Pending incoming supply</Text>
+                        <Text style={styles.performanceLabel}>{"Pending\nawaiting reply"}</Text>
                         <View style={[styles.performanceTrend, { backgroundColor: '#F0EFEA' }]}>
                             <Text style={[styles.performanceTrendText, { color: '#8A8378' }]}>--</Text>
                         </View>
@@ -443,8 +451,9 @@ export default function HomeScreen() {
                 {/* 6. Recommended For You */}
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionTitle}>RECOMMENDED FOR YOU</Text>
-                    <TouchableOpacity style={styles.filterIconBtn}>
-                        <Ionicons name="options-outline" size={16} color="#1C1A17" />
+                    <TouchableOpacity style={styles.aiTagBtn}>
+                        <Ionicons name="sparkles" size={12} color="#0E7A57" style={{ marginRight: 4 }} />
+                        <Text style={styles.aiTagBtnText}>AI</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -482,8 +491,8 @@ export default function HomeScreen() {
                     {/* Card 1 */}
                     <View style={styles.recomCard}>
                         <View style={[styles.recomImageArea, { backgroundColor: '#EFECE6' }]}>
-                            <View style={styles.recomMatchBadge}>
-                                <Text style={styles.recomMatchBadgeText}>12% match</Text>
+                            <View style={styles.recomMatchBadgeRight}>
+                                <Text style={styles.recomMatchBadgeTextGold}>⚡ 92% match</Text>
                             </View>
                             <Feather name="image" size={32} color="#8A8378" />
                         </View>
@@ -499,8 +508,8 @@ export default function HomeScreen() {
                     {/* Card 2 */}
                     <View style={styles.recomCard}>
                         <View style={[styles.recomImageArea, { backgroundColor: '#ECE9E2' }]}>
-                            <View style={styles.recomMatchBadge}>
-                                <Text style={styles.recomMatchBadgeText}>80% match</Text>
+                            <View style={styles.recomMatchBadgeRight}>
+                                <Text style={styles.recomMatchBadgeTextGold}>⚡ 80% match</Text>
                             </View>
                             <Feather name="image" size={32} color="#8A8378" />
                         </View>
@@ -521,43 +530,43 @@ export default function HomeScreen() {
 
                 <View style={styles.quickActionsGrid}>
                     <TouchableOpacity style={styles.quickActionItem}>
-                        <View style={[styles.quickActionIconWrapper, { backgroundColor: 'rgba(14,122,87,0.1)' }]}>
-                            <Ionicons name="megaphone-outline" size={20} color="#0E7A57" />
+                        <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
+                            <Feather name="send" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>Analyze{"\n"}opportunities</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.quickActionItem}>
-                        <View style={[styles.quickActionIconWrapper, { backgroundColor: 'rgba(231,178,92,0.1)' }]}>
-                            <Feather name="file-text" size={20} color="#E7B25C" />
+                        <View style={[styles.quickActionIconWrapper, { backgroundColor: '#FAF2E6' }]}>
+                            <Feather name="inbox" size={20} color="#E7B25C" />
                         </View>
                         <Text style={styles.quickActionLabel}>Submit{"\n"}deliverables</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.quickActionItem}>
-                        <View style={[styles.quickActionIconWrapper, { backgroundColor: 'rgba(15,159,144,0.1)' }]}>
-                            <Feather name="camera" size={20} color="#0F9F90" />
+                        <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
+                            <Feather name="grid" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>Create{"\n"}media kit</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.quickActionItem}>
-                        <View style={[styles.quickActionIconWrapper, { backgroundColor: 'rgba(52,152,219,0.1)' }]}>
-                            <Ionicons name="bar-chart-outline" size={20} color="#3498DB" />
+                        <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
+                            <Feather name="bar-chart-2" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>View{"\n"}analytics</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.quickActionItem}>
-                        <View style={[styles.quickActionIconWrapper, { backgroundColor: 'rgba(155,89,182,0.1)' }]}>
-                            <Feather name="search" size={20} color="#9B59B6" />
+                        <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
+                            <Feather name="search" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>Find{"\n"}collaborations</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.quickActionItem}>
-                        <View style={[styles.quickActionIconWrapper, { backgroundColor: 'rgba(230,126,34,0.1)' }]}>
-                            <Feather name="award" size={20} color="#E67E22" />
+                        <View style={[styles.quickActionIconWrapper, { backgroundColor: '#FAF2E6' }]}>
+                            <Feather name="award" size={20} color="#E7B25C" />
                         </View>
                         <Text style={styles.quickActionLabel}>Award{"\n"}opportunities</Text>
                     </TouchableOpacity>
@@ -579,16 +588,17 @@ export default function HomeScreen() {
                             <Text style={styles.contentTitle}>Aman Resorts</Text>
                             <Text style={styles.contentProgressText}>Due in 2d • 2 of 3 uploaded</Text>
                             <View style={styles.contentProgressBarBg}>
-                                <View style={[styles.contentProgressBarFill, { width: '66.6%' }]} />
+                                <View style={[styles.contentProgressBarFillGold, { width: '66.6%' }]} />
                             </View>
                         </View>
                         <View style={styles.contentActionArea}>
-                            <Text style={styles.contentPercent}>66%</Text>
-                            <TouchableOpacity style={styles.contentUploadBtn}>
-                                <Feather name="upload-cloud" size={14} color="#FFF" />
-                            </TouchableOpacity>
+                            <Text style={styles.contentPercentGold}>66%</Text>
                         </View>
                     </View>
+                    <TouchableOpacity style={styles.contentUploadFullBtn}>
+                        <Feather name="upload-cloud" size={14} color="#FFF" style={{ marginRight: 6 }} />
+                        <Text style={styles.contentUploadFullBtnText}>Upload content</Text>
+                    </TouchableOpacity>
 
                     <View style={styles.contentDivider} />
 
@@ -599,16 +609,17 @@ export default function HomeScreen() {
                             <Text style={styles.contentTitle}>Six Senses</Text>
                             <Text style={styles.contentProgressText}>Due in 15d • Not started</Text>
                             <View style={styles.contentProgressBarBg}>
-                                <View style={[styles.contentProgressBarFill, { width: '0%' }]} />
+                                <View style={[styles.contentProgressBarFillGold, { width: '0%' }]} />
                             </View>
                         </View>
                         <View style={styles.contentActionArea}>
-                            <Text style={[styles.contentPercent, { color: '#8A8378' }]}>0%</Text>
-                            <TouchableOpacity style={[styles.contentUploadBtn, { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EFECE6' }]}>
-                                <Feather name="upload-cloud" size={14} color="#8A8378" />
-                            </TouchableOpacity>
+                            <Text style={[styles.contentPercentGold, { color: '#8A8378' }]}>0%</Text>
                         </View>
                     </View>
+                    <TouchableOpacity style={styles.contentUploadOutlineBtn}>
+                        <Feather name="upload-cloud" size={14} color="#0E7A57" style={{ marginRight: 6 }} />
+                        <Text style={styles.contentUploadOutlineBtnText}>Upload content</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* 9. Messages */}
@@ -698,28 +709,28 @@ export default function HomeScreen() {
                     <View style={styles.chartContainer}>
                         <View style={styles.chartBarsRow}>
                             <View style={styles.chartBarCol}>
-                                <View style={[styles.chartBarFill, { height: 40, backgroundColor: '#E8F1EC' }]} />
+                                <View style={[styles.chartBarFillThick, { height: 45, backgroundColor: '#E8F1EC' }]} />
+                                <Text style={styles.chartBarLabel}>Jan</Text>
+                            </View>
+                            <View style={styles.chartBarCol}>
+                                <View style={[styles.chartBarFillThick, { height: 60, backgroundColor: '#E8F1EC' }]} />
+                                <Text style={styles.chartBarLabel}>Feb</Text>
+                            </View>
+                            <View style={styles.chartBarCol}>
+                                <View style={[styles.chartBarFillThick, { height: 50, backgroundColor: '#E8F1EC' }]} />
+                                <Text style={styles.chartBarLabel}>Mar</Text>
+                            </View>
+                            <View style={styles.chartBarCol}>
+                                <View style={[styles.chartBarFillThick, { height: 78, backgroundColor: '#E8F1EC' }]} />
+                                <Text style={styles.chartBarLabel}>Apr</Text>
+                            </View>
+                            <View style={styles.chartBarCol}>
+                                <View style={[styles.chartBarFillThick, { height: 98, backgroundColor: '#0E7A57' }]} />
+                                <Text style={styles.chartBarLabel}>May</Text>
+                            </View>
+                            <View style={styles.chartBarCol}>
+                                <View style={[styles.chartBarFillThick, { height: 115, backgroundColor: '#E7B25C' }]} />
                                 <Text style={styles.chartBarLabel}>Jun</Text>
-                            </View>
-                            <View style={styles.chartBarCol}>
-                                <View style={[styles.chartBarFill, { height: 55, backgroundColor: '#E8F1EC' }]} />
-                                <Text style={styles.chartBarLabel}>Jul</Text>
-                            </View>
-                            <View style={styles.chartBarCol}>
-                                <View style={[styles.chartBarFill, { height: 48, backgroundColor: '#E8F1EC' }]} />
-                                <Text style={styles.chartBarLabel}>Aug</Text>
-                            </View>
-                            <View style={styles.chartBarCol}>
-                                <View style={[styles.chartBarFill, { height: 75, backgroundColor: '#E8F1EC' }]} />
-                                <Text style={styles.chartBarLabel}>Sep</Text>
-                            </View>
-                            <View style={styles.chartBarCol}>
-                                <View style={[styles.chartBarFill, { height: 95, backgroundColor: '#062A1E' }]} />
-                                <Text style={styles.chartBarLabel}>Oct</Text>
-                            </View>
-                            <View style={styles.chartBarCol}>
-                                <View style={[styles.chartBarFill, { height: 110, backgroundColor: '#E7B25C' }]} />
-                                <Text style={styles.chartBarLabel}>Nov</Text>
                             </View>
                         </View>
                     </View>
@@ -750,7 +761,7 @@ export default function HomeScreen() {
                         </View>
 
                         <View style={styles.analyticsStatItem}>
-                            <Feather name="users" size={14} color="#8A8378" style={{ marginRight: 6 }} />
+                            <Feather name="trending-up" size={14} color="#8A8378" style={{ marginRight: 6 }} />
                             <View>
                                 <Text style={styles.analyticsStatVal}>+0.2%</Text>
                                 <Text style={styles.analyticsStatLbl}>Audience</Text>
@@ -772,7 +783,7 @@ export default function HomeScreen() {
                 >
                     <View style={styles.achievementBadgeWrapper}>
                         <View style={[styles.achievementBadgeIcon, { backgroundColor: '#E8F1EC' }]}>
-                            <Ionicons name="shield-checkmark" size={24} color="#0E7A57" />
+                            <MaterialCommunityIcons name="check-decagram-outline" size={24} color="#0E7A57" />
                         </View>
                         <Text style={styles.achievementBadgeName}>Verified Creator</Text>
                     </View>
@@ -785,10 +796,10 @@ export default function HomeScreen() {
                     </View>
 
                     <View style={styles.achievementBadgeWrapper}>
-                        <View style={[styles.achievementBadgeIcon, { backgroundColor: '#FFF9E6' }]}>
-                            <Ionicons name="star" size={24} color="#FFD700" />
+                        <View style={[styles.achievementBadgeIcon, { backgroundColor: '#FAF2E6' }]}>
+                            <Ionicons name="star-outline" size={24} color="#E7B25C" />
                         </View>
-                        <Text style={styles.achievementBadgeName}>Super Rating</Text>
+                        <Text style={styles.achievementBadgeName}>5-Star Rating</Text>
                     </View>
                 </ScrollView>
             </ScrollView>
@@ -1089,14 +1100,16 @@ const styles = StyleSheet.create({
         letterSpacing: 0.8,
     },
     historyBtn: {
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        backgroundColor: 'rgba(231, 178, 92, 0.2)',
+        borderWidth: 1,
+        borderColor: '#E7B25C',
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 12,
     },
     historyBtnText: {
-        color: '#FFF',
-        fontSize: 9,
+        color: '#E7B25C',
+        fontSize: 10,
         fontWeight: 'bold',
     },
     levelName: {
@@ -1173,7 +1186,7 @@ const styles = StyleSheet.create({
         width: 14,
         height: 14,
         borderRadius: 7,
-        backgroundColor: '#FFF',
+        backgroundColor: 'rgba(231, 178, 92, 0.2)',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 10,
@@ -1192,9 +1205,9 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     sectionTitle: {
-        fontSize: 13,
-        fontWeight: 'bold',
-        color: '#1C1A17',
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#8A8378',
         letterSpacing: 0.8,
     },
     seeAllText: {
@@ -1311,11 +1324,19 @@ const styles = StyleSheet.create({
     performanceCard: {
         backgroundColor: '#FFF',
         width: '31%',
-        padding: 16,
+        padding: 14,
         borderRadius: 20,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#F0EFEA',
+    },
+    performanceIconCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 6,
     },
     performanceValue: {
         fontSize: 22,
@@ -1327,7 +1348,7 @@ const styles = StyleSheet.create({
         color: '#8A8378',
         textAlign: 'center',
         marginTop: 4,
-        height: 28, // Wrap clean
+        height: 28,
     },
     performanceTrend: {
         backgroundColor: 'rgba(14,122,87,0.1)',
@@ -1453,8 +1474,8 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     timelineDateColumn: {
-        width: 50,
-        alignItems: 'center',
+        width: 45,
+        alignItems: 'flex-start',
         marginRight: 12,
     },
     timelineMonth: {
@@ -1463,7 +1484,7 @@ const styles = StyleSheet.create({
         color: '#8A8378',
     },
     timelineDay: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#1C1A17',
         marginTop: 2,
@@ -1472,7 +1493,8 @@ const styles = StyleSheet.create({
         width: 1,
         backgroundColor: '#EFECE6',
         flex: 1,
-        marginVertical: 8,
+        marginTop: 8,
+        marginLeft: 8,
     },
     timelineCard: {
         flex: 1,
@@ -1531,15 +1553,20 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#0E7A57',
     },
-    filterIconBtn: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#FFF',
-        borderWidth: 1,
-        borderColor: '#EFECE6',
-        justifyContent: 'center',
+    aiTagBtn: {
+        flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#E8F1EC',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#CFE3D8',
+    },
+    aiTagBtnText: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#0E7A57',
     },
     tabsScrollContainer: {
         paddingLeft: 20,
@@ -1581,19 +1608,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
     },
-    recomMatchBadge: {
+    recomMatchBadgeRight: {
         position: 'absolute',
         top: 10,
-        left: 10,
-        backgroundColor: '#E8F1EC',
+        right: 10,
+        backgroundColor: 'rgba(28, 26, 23, 0.65)',
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 10,
     },
-    recomMatchBadgeText: {
+    recomMatchBadgeTextGold: {
         fontSize: 10,
         fontWeight: 'bold',
-        color: '#0E7A57',
+        color: '#E7B25C',
     },
     recomInfoArea: {
         padding: 12,
@@ -1685,28 +1712,49 @@ const styles = StyleSheet.create({
         borderRadius: 2,
         marginTop: 6,
     },
-    contentProgressBarFill: {
+    contentProgressBarFillGold: {
         height: '100%',
-        backgroundColor: '#0E7A57',
+        backgroundColor: '#E7B25C',
         borderRadius: 2,
     },
     contentActionArea: {
         alignItems: 'center',
         marginLeft: 12,
     },
-    contentPercent: {
-        fontSize: 11,
+    contentPercentGold: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#E7B25C',
+    },
+    contentUploadFullBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0E7A57',
+        borderRadius: 12,
+        paddingVertical: 10,
+        marginTop: 12,
+    },
+    contentUploadFullBtnText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#FFF',
+    },
+    contentUploadOutlineBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FFF',
+        borderWidth: 1,
+        borderColor: '#CFE3D8',
+        borderRadius: 12,
+        paddingVertical: 10,
+        marginTop: 12,
+    },
+    contentUploadOutlineBtnText: {
+        fontSize: 12,
         fontWeight: 'bold',
         color: '#0E7A57',
-        marginBottom: 4,
-    },
-    contentUploadBtn: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: '#0E7A57',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     contentDivider: {
         height: 1,
@@ -1823,8 +1871,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '14%',
     },
-    chartBarFill: {
-        width: 16,
+    chartBarFillThick: {
+        width: 24,
         borderRadius: 4,
         marginBottom: 6,
     },

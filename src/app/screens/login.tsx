@@ -84,7 +84,7 @@ export default function LoginScreen() {
                             <View style={styles.inputGroup}>
                                 <View style={styles.labelRow}>
                                     <Text style={styles.label}>PASSWORD</Text>
-                                    <Pressable>
+                                    <Pressable onPress={() => router.push('/screens/resetPassword')}>
                                         <Text style={styles.forgotText}>Forgot?</Text>
                                     </Pressable>
                                 </View>

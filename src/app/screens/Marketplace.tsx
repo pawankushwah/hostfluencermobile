@@ -1,4 +1,4 @@
-import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Feather, Ionicons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as React from 'react';
 import { useState } from 'react';
@@ -371,9 +371,9 @@ export default function MarketplaceScreen() {
                                         <Text style={styles.creatorAvatarText}>{item.initial}</Text>
                                     </View>
                                     {item.verified && (
-                                        <View style={styles.verifiedCheckBadge}>
-                                            <Ionicons name="shield-checkmark" size={10} color="#FFF" />
-                                        </View>
+                                         <View style={styles.verifiedCheckBadge}>
+                                             <MaterialCommunityIcons name="check-decagram" size={10} color="#FFF" />
+                                         </View>
                                     )}
                                 </View>
 

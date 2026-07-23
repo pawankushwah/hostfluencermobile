@@ -1,4 +1,4 @@
-import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Feather, Ionicons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as React from 'react';
 import { 
@@ -43,7 +43,7 @@ export default function ProfileScreen() {
                             <Text style={styles.avatarInitials}>S</Text>
                         </View>
                         <View style={styles.verifiedBadge}>
-                            <Ionicons name="shield-checkmark" size={10} color="#FFF" />
+                            <MaterialCommunityIcons name="check-decagram" size={12} color="#FFF" />
                         </View>
                     </View>
                     
@@ -273,7 +273,7 @@ export default function ProfileScreen() {
                     {/* Badge 1 */}
                     <View style={styles.achievementBadgeWrapper}>
                         <View style={[styles.achievementBadgeIcon, { backgroundColor: '#E8F1EC' }]}>
-                            <Ionicons name="shield-checkmark" size={24} color="#0E7A57" />
+                            <MaterialCommunityIcons name="check-decagram-outline" size={24} color="#0E7A57" />
                         </View>
                         <Text style={styles.achievementBadgeName}>Verified</Text>
                     </View>
