@@ -3,8 +3,9 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '@/lib/supabase';
 
 export default function SignupScreen() {
     const [firstName, setFirstName] = useState('');
@@ -13,8 +14,9 @@ export default function SignupScreen() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const handleSignup = () => {
+    const handleSignup = async () => {
         const trimmedFirstName = firstName.trim();
         const trimmedLastName = lastName.trim();
         const trimmedEmail = email.trim();
@@ -57,12 +59,73 @@ export default function SignupScreen() {
             return;
         }
 
-        router.push('/screens/roleSelection');
+        setLoading(true);
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email: trimmedEmail,
+                password: trimmedPassword,
+                options: {
+                    data: {
+                        first_name: trimmedFirstName,
+                        last_name: trimmedLastName,
+                    },
+                },
+            });
+
+            if (error) {
+                Alert.alert('Signup Failed', error.message);
+                return;
+            }
+
+            if (data.user) {
+                await supabase.from('profiles').upsert({
+                    id: data.user.id,
+                    first_name: trimmedFirstName,
+                    last_name: trimmedLastName,
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'id' });
+            }
+
+            if (data.session) {
+                // Session created & persisted in storage!
+                router.push('/screens/roleSelection');
+            } else if (data.user) {
+                // Attempt auto sign in if email confirmation is disabled
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: trimmedEmail,
+                    password: trimmedPassword,
+                });
+
+                if (!signInError) {
+                    router.push('/screens/roleSelection');
+                } else {
+                    Alert.alert(
+                        'Account Created',
+                        'Your account has been created. Please sign in to continue.',
+                        [{ text: 'Sign In', onPress: () => router.push('/screens/login') }]
+                    );
+                }
+            }
+        } catch (err: any) {
+            Alert.alert('Error', err.message || 'An unexpected error occurred during sign up.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-            <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
                 <View style={styles.card}>
                     <View style={styles.logoContainer}>
                         <Image source={signupLogo} style={styles.logo} contentFit="contain" />
@@ -149,9 +212,19 @@ export default function SignupScreen() {
                                 </View>
                             </View>
 
-                            <Pressable style={styles.loginButton} onPress={handleSignup}>
-                                <Text style={styles.loginButtonText}>Create Account</Text>
-                                <Feather name="arrow-right" size={20} color="#FFF" style={styles.loginButtonIcon} />
+                            <Pressable 
+                                style={[styles.loginButton, loading && { opacity: 0.7 }]} 
+                                onPress={handleSignup}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#FFF" />
+                                ) : (
+                                    <>
+                                        <Text style={styles.loginButtonText}>Create Account</Text>
+                                        <Feather name="arrow-right" size={20} color="#FFF" style={styles.loginButtonIcon} />
+                                    </>
+                                )}
                             </Pressable>
                         </View>
 
@@ -168,6 +241,7 @@ export default function SignupScreen() {
 
                 <Text style={styles.brandText}>Hostfluencer</Text>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

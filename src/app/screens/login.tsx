@@ -1,10 +1,11 @@
 import image from '@/assets/screen/Decorative Visual Header.png';
+import { supabase } from '@/lib/supabase';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
@@ -12,8 +13,9 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         const trimmedEmail = email.trim();
         const trimmedPassword = password;
 
@@ -38,99 +40,138 @@ export default function LoginScreen() {
             return;
         }
 
-        router.push('/screens/roleSelection');
+        setLoading(true);
+        try {
+            const { error, ...data } = await supabase.auth.signInWithPassword({
+                email: trimmedEmail,
+                password: trimmedPassword,
+            });
+            console.log(data);
+            console.log(error);
+            if (error) {
+                Alert.alert('Login Failed', error.message);
+                return;
+            }
+
+            router.push('/screens/roleSelection');
+        } catch (err: any) {
+            Alert.alert('Error', err.message || 'An unexpected error occurred during login.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-            <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-                <View style={styles.card}>
-                    <View style={styles.imageContainer}>
-                        <Image
-                            source={image}
-                            style={styles.heroImage}
-                            contentFit="cover"
-                        />
-                        <LinearGradient
-                            colors={['transparent', '#FFFFFF']}
-                            style={styles.gradient}
-                            locations={[0.5, 1]}
-                        />
-                    </View>
-
-                    <View style={styles.contentContainer}>
-                        <View style={styles.header}>
-                            <Text style={styles.title}>Welcome Back</Text>
-                            <Text style={styles.subtitle}>Sign in to continue managing your stays.</Text>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.card}>
+                        <View style={styles.imageContainer}>
+                            <Image
+                                source={image}
+                                style={styles.heroImage}
+                                contentFit="cover"
+                            />
+                            <LinearGradient
+                                colors={['transparent', '#FFFFFF']}
+                                style={styles.gradient}
+                                locations={[0.5, 1]}
+                            />
                         </View>
 
-                        <View style={styles.formContainer}>
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>EMAIL ADDRESS</Text>
-                                <View style={styles.inputContainer}>
-                                    <Feather name="mail" size={20} color="#A0A0A0" style={styles.inputIcon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="hello@hostfluencer.com"
-                                        placeholderTextColor="#A0A0A0"
-                                        value={email}
-                                        onChangeText={setEmail}
-                                        keyboardType="email-address"
-                                        autoCapitalize="none"
-                                    />
-                                </View>
+                        <View style={styles.contentContainer}>
+                            <View style={styles.header}>
+                                <Text style={styles.title}>Welcome Back</Text>
+                                <Text style={styles.subtitle}>Sign in to continue managing your stays.</Text>
                             </View>
 
-                            <View style={styles.inputGroup}>
-                                <View style={styles.labelRow}>
-                                    <Text style={styles.label}>PASSWORD</Text>
-                                    <Pressable onPress={() => router.push('/screens/resetPassword')}>
-                                        <Text style={styles.forgotText}>Forgot?</Text>
-                                    </Pressable>
+                            <View style={styles.formContainer}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>EMAIL ADDRESS</Text>
+                                    <View style={styles.inputContainer}>
+                                        <Feather name="mail" size={20} color="#A0A0A0" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="hello@hostfluencer.com"
+                                            placeholderTextColor="#A0A0A0"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                        />
+                                    </View>
                                 </View>
-                                <View style={styles.inputContainer}>
-                                    <Feather name="lock" size={20} color="#A0A0A0" style={styles.inputIcon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="••••••••"
-                                        placeholderTextColor="#A0A0A0"
-                                        value={password}
-                                        onChangeText={setPassword}
-                                        secureTextEntry={!showPassword}
-                                    />
-                                    <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                        <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#A0A0A0" />
-                                    </Pressable>
+
+                                <View style={styles.inputGroup}>
+                                    <View style={styles.labelRow}>
+                                        <Text style={styles.label}>PASSWORD</Text>
+                                        <Pressable onPress={() => router.push('/screens/resetPassword')}>
+                                            <Text style={styles.forgotText}>Forgot?</Text>
+                                        </Pressable>
+                                    </View>
+                                    <View style={styles.inputContainer}>
+                                        <Feather name="lock" size={20} color="#A0A0A0" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="••••••••"
+                                            placeholderTextColor="#A0A0A0"
+                                            value={password}
+                                            onChangeText={setPassword}
+                                            secureTextEntry={!showPassword}
+                                        />
+                                        <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                            <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#A0A0A0" />
+                                        </Pressable>
+                                    </View>
                                 </View>
+
+                                <Pressable
+                                    style={styles.checkboxContainer}
+                                    onPress={() => setRememberMe(!rememberMe)}
+                                >
+                                    <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
+                                        {rememberMe && <Feather name="check" size={14} color="#FFF" />}
+                                    </View>
+                                    <Text style={styles.checkboxLabel}>Remember me for 30 days</Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={[styles.loginButton, loading && { opacity: 0.7 }]}
+                                    onPress={handleLogin}
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color="#FFF" />
+                                    ) : (
+                                        <>
+                                            <Text style={styles.loginButtonText}>Login</Text>
+                                            <Feather name="arrow-right" size={20} color="#FFF" style={styles.loginButtonIcon} />
+                                        </>
+                                    )}
+                                </Pressable>
                             </View>
 
-                            <Pressable
-                                style={styles.checkboxContainer}
-                                onPress={() => setRememberMe(!rememberMe)}
-                            >
-                                <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
-                                    {rememberMe && <Feather name="check" size={14} color="#FFF" />}
-                                </View>
-                                <Text style={styles.checkboxLabel}>Remember me for 30 days</Text>
-                            </Pressable>
+                            <View style={styles.divider} />
 
-                            <Pressable style={styles.loginButton} onPress={handleLogin}>
-                                <Text style={styles.loginButtonText}>Login</Text>
-                                <Feather name="arrow-right" size={20} color="#FFF" style={styles.loginButtonIcon} />
-                            </Pressable>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        <View style={styles.footer}>
-                            <Text style={styles.footerText}>{"Don't have an account? "}</Text>
-                            <Pressable onPress={() => router.replace('/screens/signup')}>
-                                <Text style={styles.createAccountText}>Create Account</Text>
-                            </Pressable>
+                            <View style={styles.footer}>
+                                <Text style={styles.footerText}>{"Don't have an account? "}</Text>
+                                <Pressable onPress={() => router.replace('/screens/signup')}>
+                                    <Text style={styles.createAccountText}>Create Account</Text>
+                                </Pressable>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

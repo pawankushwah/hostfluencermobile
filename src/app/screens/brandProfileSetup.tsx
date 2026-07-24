@@ -1,36 +1,87 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Dropdown from '../../components/Dropdown';
+import { supabase } from '@/lib/supabase';
 
 const INDUSTRY_OPTIONS = [
-    { label: 'Hotels & Lodging', value: 'hotels' },
-    { label: 'Food & Beverage', value: 'food' },
     { label: 'Travel & Tourism', value: 'travel' },
-    { label: 'Fashion & Lifestyle', value: 'fashion' },
-    { label: 'Technology', value: 'tech' }
+    { label: 'Hospitality', value: 'hospitality' },
+    { label: 'Food & Beverage', value: 'food_beverage' },
+    { label: 'Fashion & Beauty', value: 'fashion' },
+    { label: 'Lifestyle', value: 'lifestyle' },
+    { label: 'Technology', value: 'technology' },
+    { label: 'Health & Wellness', value: 'health_wellness' },
+    { label: 'Other', value: 'other' }
 ];
 
-const COMPANY_SIZE_OPTIONS = [
-    { label: '1 - 10 employees', value: '1-10' },
-    { label: '11 - 50 employees', value: '11-50' },
-    { label: '51 - 200 employees', value: '51-200' },
-    { label: '201 - 500 employees', value: '201-500' },
-    { label: '500+ employees', value: '500+' }
+const BUDGET_RANGE_OPTIONS = [
+    { label: 'Under $5,000', value: 'under_5k' },
+    { label: '$5,000 - $15,000', value: '5k_15k' },
+    { label: '$15,000 - $30,000', value: '15k_30k' },
+    { label: '$30,000 - $50,000', value: '30k_50k' },
+    { label: '$50,000+', value: '50k_plus' }
 ];
 
 export default function BrandProfileSetupScreen() {
+    const [companyName, setCompanyName] = useState('');
     const [brandName, setBrandName] = useState('');
-    const [industry, setIndustry] = useState('');
-    const [companySize, setCompanySize] = useState('');
     const [website, setWebsite] = useState('');
-    const [socialLink, setSocialLink] = useState('');
+    const [industry, setIndustry] = useState('');
     const [description, setDescription] = useState('');
+    const [budgetRange, setBudgetRange] = useState('');
+    const [contactEmail, setContactEmail] = useState('');
+    const [contactPhone, setContactPhone] = useState('');
 
     const [logoImage, setLogoImage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const loadExistingBrandData = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            if (user.email) setContactEmail(user.email);
+
+            const metaFirstName = user.user_metadata?.first_name || '';
+            const metaLastName = user.user_metadata?.last_name || '';
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('first_name, last_name')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            const profileFirstName = profile?.first_name || metaFirstName;
+            const profileLastName = profile?.last_name || metaLastName;
+            const fullName = `${profileFirstName} ${profileLastName}`.trim();
+
+            const { data: brand } = await supabase
+                .from('brands')
+                .select('company_name, brand_name, website, industry, description, budget_range, contact_email, contact_phone')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (brand) {
+                if (brand.company_name) setCompanyName(brand.company_name);
+                if (brand.brand_name) setBrandName(brand.brand_name);
+                if (brand.website) setWebsite(brand.website);
+                if (brand.industry) setIndustry(brand.industry);
+                if (brand.description) setDescription(brand.description);
+                if (brand.budget_range) setBudgetRange(brand.budget_range);
+                if (brand.contact_email) setContactEmail(brand.contact_email);
+                if (brand.contact_phone) setContactPhone(brand.contact_phone);
+            } else if (fullName) {
+                setBrandName(fullName);
+                setCompanyName(fullName);
+            }
+        };
+
+        loadExistingBrandData();
+    }, []);
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -51,12 +102,19 @@ export default function BrandProfileSetupScreen() {
         }
     };
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
+        const trimmedCompanyName = companyName.trim();
         const trimmedBrandName = brandName.trim();
         const trimmedDescription = description.trim();
+        const trimmedContactEmail = contactEmail.trim();
+
+        if (!trimmedCompanyName) {
+            Alert.alert('Validation Error', 'Please enter your company name.');
+            return;
+        }
 
         if (!trimmedBrandName) {
-            Alert.alert('Validation Error', 'Please enter the brand name.');
+            Alert.alert('Validation Error', 'Please enter your brand name.');
             return;
         }
 
@@ -70,22 +128,98 @@ export default function BrandProfileSetupScreen() {
             return;
         }
 
-        router.push('/screens/profileSuccess');
+        if (trimmedDescription.length < 20) {
+            Alert.alert('Validation Error', 'Please write a description (at least 20 characters).');
+            return;
+        }
+
+        if (!budgetRange) {
+            Alert.alert('Validation Error', 'Please select a monthly campaign budget range.');
+            return;
+        }
+
+        if (!trimmedContactEmail) {
+            Alert.alert('Validation Error', 'Please enter a contact email.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+            if (userError || !user) {
+                Alert.alert('Error', 'User session not found. Please log in again.');
+                setLoading(false);
+                return;
+            }
+
+            // 1. Upsert brands table
+            const { error: brandError } = await supabase
+                .from('brands')
+                .upsert({
+                    user_id: user.id,
+                    company_name: trimmedCompanyName,
+                    brand_name: trimmedBrandName,
+                    website: website.trim() || null,
+                    industry: industry,
+                    description: trimmedDescription,
+                    budget_range: budgetRange,
+                    contact_email: trimmedContactEmail,
+                    contact_phone: contactPhone.trim() || null,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+
+            if (brandError) {
+                console.error('Error upserting brands:', brandError);
+                throw brandError;
+            }
+
+            // 2. Upsert profiles table
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    first_name: trimmedBrandName,
+                    user_type: 'brand',
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'id' });
+
+            if (profileError) {
+                console.error('Error updating profiles:', profileError);
+                throw profileError;
+            }
+
+            router.push('/screens/profileSuccess');
+        } catch (error: any) {
+            Alert.alert('Submission Error', error.message || 'Failed to create brand profile. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-            <View style={styles.headerContainer}>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <Feather name="arrow-left" size={24} color="#0B1C30" />
-                </Pressable>
-                
-                <Text style={styles.headerTitle}>Hostfluencer</Text>
-                
-                <View style={{ width: 24 }} />
-            </View>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <View style={styles.headerContainer}>
+                    <Pressable onPress={() => router.back()} style={styles.backButton}>
+                        <Feather name="arrow-left" size={24} color="#0B1C30" />
+                    </Pressable>
+                    
+                    <Text style={styles.headerTitle}>Hostfluencer</Text>
+                    
+                    <View style={{ width: 24 }} />
+                </View>
 
-            <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Set up your brand{'\n'}profile</Text>
                     <Text style={styles.subtitle}>Tell us about your company to help creators understand your brand identity and goals.</Text>
@@ -109,6 +243,21 @@ export default function BrandProfileSetupScreen() {
                     </View>
 
                     <View style={styles.formContainer}>
+                        {/* Company Name */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Company Name <Text style={styles.required}>*</Text></Text>
+                            <View style={styles.inputContainer}>
+                                <MaterialCommunityIcons name="domain" size={20} color="#6C7A72" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="e.g. Acme Corporation"
+                                    placeholderTextColor="#A0A0A0"
+                                    value={companyName}
+                                    onChangeText={setCompanyName}
+                                />
+                            </View>
+                        </View>
+
                         {/* Brand Name */}
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Brand Name <Text style={styles.required}>*</Text></Text>
@@ -116,7 +265,7 @@ export default function BrandProfileSetupScreen() {
                                 <MaterialCommunityIcons name="storefront-outline" size={20} color="#6C7A72" style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="e.g. Acme Corp"
+                                    placeholder="e.g. Acme Apparel"
                                     placeholderTextColor="#A0A0A0"
                                     value={brandName}
                                     onChangeText={setBrandName}
@@ -136,15 +285,15 @@ export default function BrandProfileSetupScreen() {
                             />
                         </View>
 
-                        {/* Company Size */}
+                        {/* Budget Range */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Company Size</Text>
+                            <Text style={styles.label}>Monthly Campaign Budget <Text style={styles.required}>*</Text></Text>
                             <Dropdown
-                                options={COMPANY_SIZE_OPTIONS}
-                                value={companySize}
-                                onSelect={setCompanySize}
-                                placeholder="Select size"
-                                leftIcon={<Feather name="users" size={20} color="#6C7A72" />}
+                                options={BUDGET_RANGE_OPTIONS}
+                                value={budgetRange}
+                                onSelect={setBudgetRange}
+                                placeholder="Select budget range"
+                                leftIcon={<Feather name="dollar-sign" size={20} color="#6C7A72" />}
                             />
                         </View>
 
@@ -165,19 +314,35 @@ export default function BrandProfileSetupScreen() {
                             </View>
                         </View>
 
-                        {/* Primary Social Link */}
+                        {/* Contact Email */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Primary Social Link</Text>
-                            <View style={[styles.inputContainer, { height: 60, alignItems: 'center' }]}>
-                                <Feather name="at-sign" size={20} color="#6C7A72" style={styles.inputIcon} />
+                            <Text style={styles.label}>Contact Email <Text style={styles.required}>*</Text></Text>
+                            <View style={styles.inputContainer}>
+                                <Feather name="mail" size={20} color="#6C7A72" style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Instagram, TikTok, or LinkedIn URL"
+                                    placeholder="contact@yourbrand.com"
                                     placeholderTextColor="#A0A0A0"
-                                    value={socialLink}
-                                    onChangeText={setSocialLink}
+                                    value={contactEmail}
+                                    onChangeText={setContactEmail}
                                     autoCapitalize="none"
-                                    multiline
+                                    keyboardType="email-address"
+                                />
+                            </View>
+                        </View>
+
+                        {/* Contact Phone */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Contact Phone</Text>
+                            <View style={styles.inputContainer}>
+                                <Feather name="phone" size={20} color="#6C7A72" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="+1 (555) 123-4567"
+                                    placeholderTextColor="#A0A0A0"
+                                    value={contactPhone}
+                                    onChangeText={setContactPhone}
+                                    keyboardType="phone-pad"
                                 />
                             </View>
                         </View>
@@ -188,7 +353,7 @@ export default function BrandProfileSetupScreen() {
                             <View style={[styles.inputContainer, styles.textAreaContainer]}>
                                 <TextInput
                                     style={styles.textArea}
-                                    placeholder="Briefly describe your brand's mission, values, and what makes you unique..."
+                                    placeholder="Tell us about your brand and what makes it special..."
                                     placeholderTextColor="#A0A0A0"
                                     value={description}
                                     onChangeText={setDescription}
@@ -209,17 +374,25 @@ export default function BrandProfileSetupScreen() {
                             </Pressable>
                             
                             <Pressable 
-                                style={styles.continueButton}
+                                style={[styles.continueButton, loading && { opacity: 0.7 }]}
                                 onPress={handleContinue}
+                                disabled={loading}
                             >
-                                <Text style={styles.continueButtonText}>Continue</Text>
-                                <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />
+                                {loading ? (
+                                    <ActivityIndicator color="#FFF" />
+                                ) : (
+                                    <>
+                                        <Text style={styles.continueButtonText}>Continue</Text>
+                                        <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />
+                                    </>
+                                )}
                             </Pressable>
                         </View>
 
                     </View>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

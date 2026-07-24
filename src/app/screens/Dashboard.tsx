@@ -1,4 +1,4 @@
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as React from 'react';
 import { useState } from 'react';
@@ -8,16 +8,25 @@ import {
     Text, 
     View, 
     TouchableOpacity,
-    Animated
+    Animated,
+    RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import { supabase } from '@/lib/supabase';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useDashboardCollaborations } from '@/hooks/useDashboardCollaborations';
+import { useRecommendedProperties } from '@/hooks/useRecommendedProperties';
 
 export default function HomeScreen() {
     const [selectedTab, setSelectedTab] = useState('Luxury Stays');
     const [performancePeriod] = useState('This week');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const { profile, points, metrics, priorities, messagesList, deliverablesList, savedOpportunitiesList, refreshing, refetch } = useDashboardData();
+    const { activeCollaborations } = useDashboardCollaborations();
+    const { properties: recommendedList } = useRecommendedProperties(selectedTab);
 
     const [fadeAnim] = useState(() => new Animated.Value(0));
     const [slideAnim] = useState(() => new Animated.Value(60)); // translateY
@@ -87,36 +96,54 @@ export default function HomeScreen() {
             
             {/* Header */}
             <View style={styles.headerRow}>
-                <View style={styles.avatarWrapper}>
-                    {/* Initials Avatar representing Siddharth */}
+                <TouchableOpacity 
+                    style={styles.avatarWrapper}
+                    onPress={() => {
+                        const targetScreen = profile?.user_type === 'host' 
+                            ? '/screens/hostProfileSetup' 
+                            : profile?.user_type === 'brand' 
+                                ? '/screens/brandProfileSetup' 
+                                : '/screens/creatorProfileSetup';
+                        router.push(targetScreen as any);
+                    }}
+                >
                     <View style={styles.avatarImagePlaceholder}>
-                        <Text style={styles.avatarInitials}>S</Text>
+                        <Text style={styles.avatarInitials}>
+                            {(profile?.first_name?.[0] || 'U').toUpperCase()}
+                        </Text>
                     </View>
                     <View style={styles.avatarBadge}>
-                        <Text style={styles.avatarBadgeText}>2</Text>
+                        <Text style={styles.avatarBadgeText}>1</Text>
                     </View>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.headerTextWrapper}>
                     <Text style={styles.greetingText}>Good morning 👋</Text>
-                    <Text style={styles.nameText}>Siddharth</Text>
+                    <Text style={styles.nameText}>
+                        {profile?.first_name || 'User'}
+                    </Text>
                 </View>
 
-                <TouchableOpacity style={styles.notificationBell}>
+                <TouchableOpacity 
+                    style={styles.notificationBell}
+                    onPress={() => router.push('/screens/Inbox' as any)}
+                >
                     <Feather name="bell" size={20} color="#1C1A17" />
                     <View style={styles.bellBadgeDot} />
                 </TouchableOpacity>
             </View>
 
-            {/* Creator Pills Row */}
+            {/* Creator Pills Row (Display Tags) */}
             <View style={styles.pillsRow}>
                 <View style={styles.pillTagTravel}>
                     <View style={styles.pillDotGreen} />
-                    <Text style={styles.pillText}>Travel Creator</Text>
+                    <Text style={styles.pillText}>
+                        {profile?.user_type === 'host' ? 'Property Host' : profile?.user_type === 'brand' ? 'Brand Partner' : 'Travel Creator'}
+                    </Text>
                 </View>
                 <View style={styles.pillTagVerified}>
                     <MaterialCommunityIcons name="check-decagram-outline" size={14} color="#0E7A57" style={{ marginRight: 4 }} />
-                    <Text style={styles.pillText}>Verified Creator</Text>
+                    <Text style={styles.pillText}>Verified Profile</Text>
                 </View>
             </View>
 
@@ -125,6 +152,9 @@ export default function HomeScreen() {
                 style={styles.scrollView} 
                 showsVerticalScrollIndicator={false} 
                 contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={refetch} colors={['#0E7A57']} />
+                }
             >
                 {/* 1. Current Level Card */}
                 <LinearGradient
@@ -135,25 +165,28 @@ export default function HomeScreen() {
                 >
                     <View style={styles.levelHeader}>
                         <Text style={styles.levelLabel}>CURRENT LEVEL</Text>
-                        <TouchableOpacity style={styles.historyBtn}>
-                            <Text style={styles.historyBtnText}>↗ +120 pts</Text>
+                        <TouchableOpacity 
+                            style={styles.historyBtn}
+                            onPress={() => router.push('/screens/Discovery' as any)}
+                        >
+                            <Text style={styles.historyBtnText}>↗ +{points?.total_points || 0} pts</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.levelName}>Seedling</Text>
+                    <Text style={styles.levelName}>{points?.current_level || 'Seedling'}</Text>
 
                     <View style={styles.pointsInfoRow}>
-                        <Text style={styles.pointsText}>390 / 500 points</Text>
-                        <Text style={styles.timeToLevelText}>{"In 2d to mid-level"}</Text>
+                        <Text style={styles.pointsText}>{points?.total_points || 0} / {points?.points_to_next_level || 500} points</Text>
+                        <Text style={styles.timeToLevelText}>{"Keep active to level up"}</Text>
                     </View>
 
                     {/* Custom Progress Bar */}
                     <View style={styles.progressBarBg}>
-                        <View style={[styles.progressBarFill, { width: '78%' }]} />
+                        <View style={[styles.progressBarFill, { width: `${Math.min(100, Math.max(5, points?.level_progress || ((points?.total_points || 0) / 500) * 100))}%` }]} />
                     </View>
 
                     <View style={styles.progressFooter}>
-                        <Text style={styles.progressLimitText}>Seedling</Text>
+                        <Text style={styles.progressLimitText}>{points?.current_level || 'Seedling'}</Text>
                         <View style={styles.nextLevelLink}>
                             <Text style={styles.nextLevelLinkText}>Explorer 🔒</Text>
                         </View>
@@ -185,89 +218,60 @@ export default function HomeScreen() {
                     </View>
                 </LinearGradient>
 
-                {/* 2. Today's Priorities */}
+                {/* 2. Today's Priorities / Applications */}
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionTitle}>{"TODAY'S PRIORITIES"}</Text>
-                    <TouchableOpacity>
-                        <Text style={styles.seeAllText}>See all &gt;</Text>
-                    </TouchableOpacity>
+                    {priorities.length > 0 && (
+                        <TouchableOpacity onPress={() => router.push('/screens/Marketplace' as any)}>
+                            <Text style={styles.seeAllText}>See all &gt;</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                {/* Priority Card 1: Deliverable due */}
-                <View style={styles.priorityCard}>
-                    <View style={[styles.priorityIconWrapper, { backgroundColor: 'rgba(231,178,92,0.15)' }]}>
-                        <Feather name="file-text" size={18} color="#E7B25C" />
-                    </View>
-                    <View style={styles.priorityContent}>
-                        <View style={styles.priorityTitleRow}>
-                            <Text style={styles.priorityTitle}>Deliverable due</Text>
-                            <View style={[styles.priorityBadge, { backgroundColor: '#FAF2E6' }]}>
-                                <Text style={[styles.priorityBadgeText, { color: '#E7B25C' }]}>12h left</Text>
+                {priorities.length > 0 ? (
+                    priorities.map((item) => (
+                        <View key={item.id} style={styles.priorityCard}>
+                            <View style={[styles.priorityIconWrapper, { backgroundColor: item.badgeBgColor }]}>
+                                <Feather name={item.iconName as any} size={18} color={item.iconColor} />
                             </View>
-                        </View>
-                        <Text style={styles.priorityDesc}>2 posts for Aman Resorts</Text>
-                    </View>
-                    <TouchableOpacity style={styles.priorityActionBtnFilled}>
-                        <Text style={styles.priorityActionBtnFilledText}>Upload</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Priority Card 2: Contract ready */}
-                <View style={styles.priorityCard}>
-                    <View style={[styles.priorityIconWrapper, { backgroundColor: 'rgba(14,122,87,0.1)' }]}>
-                        <Feather name="file" size={18} color="#0E7A57" />
-                    </View>
-                    <View style={styles.priorityContent}>
-                        <View style={styles.priorityTitleRow}>
-                            <Text style={styles.priorityTitle}>Contract ready</Text>
-                            <View style={[styles.priorityBadge, { backgroundColor: '#EBF5F0' }]}>
-                                <Text style={[styles.priorityBadgeText, { color: '#0E7A57' }]}>NEW</Text>
+                            <View style={styles.priorityContent}>
+                                <View style={styles.priorityTitleRow}>
+                                    <Text style={styles.priorityTitle}>{item.title}</Text>
+                                    <View style={[styles.priorityBadge, { backgroundColor: item.badgeBgColor }]}>
+                                        <Text style={[styles.priorityBadgeText, { color: item.badgeColor }]}>{item.badgeText}</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.priorityDesc}>{item.description}</Text>
                             </View>
+                            <TouchableOpacity 
+                                style={item.actionType === 'filled' ? styles.priorityActionBtnFilled : styles.priorityActionBtnOutline}
+                                onPress={() => router.push('/screens/Marketplace' as any)}
+                            >
+                                <Text style={item.actionType === 'filled' ? styles.priorityActionBtnFilledText : styles.priorityActionBtnOutlineText}>
+                                    {item.actionText}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-                        <Text style={styles.priorityDesc}>Aman Resorts stay contract</Text>
-                    </View>
-                    <TouchableOpacity style={styles.priorityActionBtnOutline}>
-                        <Text style={styles.priorityActionBtnOutlineText}>View</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Priority Card 3: New invitation */}
-                <View style={styles.priorityCard}>
-                    <View style={[styles.priorityIconWrapper, { backgroundColor: 'rgba(15,159,144,0.1)' }]}>
-                        <Feather name="mail" size={18} color="#0F9F90" />
-                    </View>
-                    <View style={styles.priorityContent}>
-                        <View style={styles.priorityTitleRow}>
-                            <Text style={styles.priorityTitle}>New invitation</Text>
-                            <View style={[styles.priorityBadge, { backgroundColor: '#FDEAE8' }]}>
-                                <Text style={[styles.priorityBadgeText, { color: '#D85C4B' }]}>EXPIRY</Text>
-                            </View>
+                    ))
+                ) : (
+                    /* Figma Exact Empty State Card: No applications yet */
+                    <View style={styles.emptyAppCard}>
+                        <View style={styles.emptyAppIconCircle}>
+                            <Feather name="send" size={28} color="#0E7A57" />
                         </View>
-                        <Text style={styles.priorityDesc}>Soneva Jani invites you to apply</Text>
+                        <Text style={styles.emptyAppTitle}>No applications yet</Text>
+                        <Text style={styles.emptyAppSubtitle}>
+                            Discover stays and brand deals matched to your audience.
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.emptyAppBtn}
+                            onPress={() => router.push('/screens/Marketplace' as any)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.emptyAppBtnText}>Find opportunities</Text>
+                        </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={styles.priorityActionBtnFilled}>
-                        <Text style={styles.priorityActionBtnFilledText}>Accept</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Priority Card 4: Unread message */}
-                <View style={styles.priorityCard}>
-                    <View style={[styles.priorityIconWrapper, { backgroundColor: 'rgba(52,152,219,0.1)' }]}>
-                        <Feather name="message-square" size={18} color="#3498DB" />
-                    </View>
-                    <View style={styles.priorityContent}>
-                        <View style={styles.priorityTitleRow}>
-                            <Text style={styles.priorityTitle}>Unread message</Text>
-                            <View style={styles.priorityGreenBadge}>
-                                <Text style={styles.priorityGreenBadgeText}>1</Text>
-                            </View>
-                        </View>
-                        <Text style={styles.priorityDesc}>Marina - Villa Samarind</Text>
-                    </View>
-                    <TouchableOpacity style={styles.priorityActionBtnOutline}>
-                        <Text style={styles.priorityActionBtnOutlineText}>Reply</Text>
-                    </TouchableOpacity>
-                </View>
+                )}
 
                 {/* 3. Performance Row */}
                 <View style={styles.sectionHeaderRow}>
@@ -279,120 +283,123 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={styles.performanceRow}>
-                    <View style={styles.performanceCard}>
+                    <TouchableOpacity 
+                        style={styles.performanceCard}
+                        onPress={() => router.push('/screens/Marketplace' as any)}
+                    >
                         <View style={[styles.performanceIconCircle, { backgroundColor: '#E8F1EC' }]}>
                             <Feather name="send" size={16} color="#0E7A57" />
                         </View>
-                        <Text style={styles.performanceValue}>48</Text>
+                        <Text style={styles.performanceValue}>{metrics.applicationsCount}</Text>
                         <Text style={styles.performanceLabel}>Applications</Text>
                         <View style={styles.performanceTrend}>
-                            <Text style={styles.performanceTrendText}>▲ 18%</Text>
+                            <Text style={styles.performanceTrendText}>▲ Live</Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
-                    <View style={styles.performanceCard}>
+                    <TouchableOpacity 
+                        style={styles.performanceCard}
+                        onPress={() => router.push('/screens/Marketplace' as any)}
+                    >
                         <View style={[styles.performanceIconCircle, { backgroundColor: '#E8F1EC' }]}>
                             <Feather name="briefcase" size={16} color="#0E7A57" />
                         </View>
-                        <Text style={styles.performanceValue}>12</Text>
+                        <Text style={styles.performanceValue}>{metrics.activeCollaborationsCount}</Text>
                         <Text style={styles.performanceLabel}>Collaborations</Text>
                         <View style={styles.performanceTrend}>
-                            <Text style={styles.performanceTrendText}>▲ 4%</Text>
+                            <Text style={styles.performanceTrendText}>▲ Live</Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
-                    <View style={styles.performanceCard}>
+                    <TouchableOpacity 
+                        style={styles.performanceCard}
+                        onPress={() => router.push('/screens/Marketplace' as any)}
+                    >
                         <View style={[styles.performanceIconCircle, { backgroundColor: '#FAF2E6' }]}>
                             <Feather name="clock" size={16} color="#E7B25C" />
                         </View>
-                        <Text style={styles.performanceValue}>5</Text>
+                        <Text style={styles.performanceValue}>{metrics.pendingCount}</Text>
                         <Text style={styles.performanceLabel}>{"Pending\nawaiting reply"}</Text>
                         <View style={[styles.performanceTrend, { backgroundColor: '#F0EFEA' }]}>
                             <Text style={[styles.performanceTrendText, { color: '#8A8378' }]}>--</Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* 4. Active Collaborations */}
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionTitle}>ACTIVE COLLABORATIONS</Text>
-                    <TouchableOpacity>
-                        <Text style={styles.seeAllText}>See all &gt;</Text>
-                    </TouchableOpacity>
+                    {activeCollaborations.length > 0 && (
+                        <TouchableOpacity onPress={() => router.push('/screens/Marketplace' as any)}>
+                            <Text style={styles.seeAllText}>See all &gt;</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                <ScrollView 
-                    horizontal 
-                    showsHorizontalScrollIndicator={false} 
-                    contentContainerStyle={styles.horizontalScrollContainer}
-                >
-                    {/* Active Collab Card 1 */}
-                    <View style={styles.collabCard}>
-                        <View style={[styles.collabImageArea, { backgroundColor: '#EFECE6' }]}>
-                            {/* Overlay Badges */}
-                            <View style={styles.collabBadgeLeft}>
-                                <View style={styles.pillDotGreen} />
-                                <Text style={styles.collabBadgeLeftText}>In progress</Text>
+                {activeCollaborations.length > 0 ? (
+                    <ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false} 
+                        contentContainerStyle={styles.horizontalScrollContainer}
+                    >
+                        {activeCollaborations.map(collab => (
+                            <View key={collab.id} style={styles.collabCard}>
+                                <View style={[styles.collabImageArea, { backgroundColor: '#EFECE6' }]}>
+                                    <View style={styles.collabBadgeLeft}>
+                                        <View style={styles.pillDotGreen} />
+                                        <Text style={styles.collabBadgeLeftText}>{collab.statusLabel}</Text>
+                                    </View>
+                                    <View style={styles.collabBadgeRight}>
+                                        <Text style={styles.collabBadgeRightText}>{collab.daysLeftText}</Text>
+                                    </View>
+                                    <Feather name="image" size={32} color="#8A8378" />
+                                </View>
+                                <View style={styles.collabInfoArea}>
+                                    <Text style={styles.collabTitle}>{collab.title}</Text>
+                                    <Text style={styles.collabSubtitle}>{collab.location}</Text>
+                                    
+                                    <View style={styles.collabMilestoneRow}>
+                                        <Text style={styles.collabMilestoneLabel}>Milestones</Text>
+                                        <Text style={styles.collabMilestoneValue}>{collab.milestoneCurrent} / {collab.milestoneTotal}</Text>
+                                    </View>
+                                    <View style={styles.collabProgressBarBg}>
+                                        <View style={[styles.collabProgressBarFill, { width: `${collab.progressPercentage}%` }]} />
+                                    </View>
+                                </View>
+                                <TouchableOpacity 
+                                    style={styles.collabCardFooter}
+                                    onPress={() => router.push('/screens/Marketplace' as any)}
+                                >
+                                    <Text style={styles.collabCardFooterText}>View collaboration</Text>
+                                    <Feather name="arrow-right" size={14} color="#1C1A17" style={{ marginLeft: 4 }} />
+                                </TouchableOpacity>
                             </View>
-                            <View style={styles.collabBadgeRight}>
-                                <Text style={styles.collabBadgeRightText}>4 days left</Text>
-                            </View>
-                            <Feather name="image" size={32} color="#8A8378" />
+                        ))}
+                    </ScrollView>
+                ) : (
+                    /* Figma Exact Empty State Card */
+                    <View style={styles.emptyCollabCard}>
+                        <View style={styles.emptyCollabIconCircle}>
+                            <FontAwesome5 name="handshake" size={30} color="#0E7A57" />
                         </View>
-                        <View style={styles.collabInfoArea}>
-                            <Text style={styles.collabTitle}>Aman Resorts</Text>
-                            <Text style={styles.collabSubtitle}>Ubud, Bali</Text>
-                            
-                            <View style={styles.collabMilestoneRow}>
-                                <Text style={styles.collabMilestoneLabel}>Milestones</Text>
-                                <Text style={styles.collabMilestoneValue}>1 / 3</Text>
-                            </View>
-                            {/* Small progress bar */}
-                            <View style={styles.collabProgressBarBg}>
-                                <View style={[styles.collabProgressBarFill, { width: '33.3%' }]} />
-                            </View>
-                        </View>
-                        <TouchableOpacity style={styles.collabCardFooter}>
-                            <Text style={styles.collabCardFooterText}>View collaboration</Text>
-                            <Feather name="arrow-right" size={14} color="#1C1A17" style={{ marginLeft: 4 }} />
+                        <Text style={styles.emptyCollabTitle}>No collaborations yet</Text>
+                        <Text style={styles.emptyCollabSubtitle}>
+                            Apply to opportunities and your active collabs will live here.
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.emptyCollabBtn}
+                            onPress={() => router.push('/screens/Marketplace' as any)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.emptyCollabBtnText}>Browse marketplace</Text>
                         </TouchableOpacity>
                     </View>
-
-                    {/* Active Collab Card 2 */}
-                    <View style={styles.collabCard}>
-                        <View style={[styles.collabImageArea, { backgroundColor: '#ECE9E2' }]}>
-                            <View style={[styles.collabBadgeLeft, { backgroundColor: '#FFF' }]}>
-                                <View style={[styles.pillDotGreen, { backgroundColor: '#E7B25C' }]} />
-                                <Text style={styles.collabBadgeLeftText}>Filing</Text>
-                            </View>
-                            <View style={styles.collabBadgeRight}>
-                                <Text style={styles.collabBadgeRightText}>38 days left</Text>
-                            </View>
-                            <Feather name="image" size={32} color="#8A8378" />
-                        </View>
-                        <View style={styles.collabInfoArea}>
-                            <Text style={styles.collabTitle}>Soneva Jani</Text>
-                            <Text style={styles.collabSubtitle}>Noonu, Maldives</Text>
-                            
-                            <View style={styles.collabMilestoneRow}>
-                                <Text style={styles.collabMilestoneLabel}>Milestones</Text>
-                                <Text style={styles.collabMilestoneValue}>0 / 2</Text>
-                            </View>
-                            <View style={styles.collabProgressBarBg}>
-                                <View style={[styles.collabProgressBarFill, { width: '0%' }]} />
-                            </View>
-                        </View>
-                        <TouchableOpacity style={styles.collabCardFooter}>
-                            <Text style={styles.collabCardFooterText}>View collaboration</Text>
-                            <Feather name="arrow-right" size={14} color="#1C1A17" style={{ marginLeft: 4 }} />
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
+                )}
 
                 {/* 5. Upcoming Stays */}
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionTitle}>UPCOMING STAYS</Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/screens/Marketplace' as any)}>
                         <Text style={styles.seeAllText}>Calendar &gt;</Text>
                     </TouchableOpacity>
                 </View>
@@ -451,7 +458,10 @@ export default function HomeScreen() {
                 {/* 6. Recommended For You */}
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionTitle}>RECOMMENDED FOR YOU</Text>
-                    <TouchableOpacity style={styles.aiTagBtn}>
+                    <TouchableOpacity 
+                        style={styles.aiTagBtn}
+                        onPress={() => router.push('/screens/Discovery' as any)}
+                    >
                         <Ionicons name="sparkles" size={12} color="#0E7A57" style={{ marginRight: 4 }} />
                         <Text style={styles.aiTagBtnText}>AI</Text>
                     </TouchableOpacity>
@@ -463,7 +473,7 @@ export default function HomeScreen() {
                     showsHorizontalScrollIndicator={false} 
                     contentContainerStyle={styles.tabsScrollContainer}
                 >
-                    {['Luxury Stays', 'Beach Resorts', 'Eco-resorts', 'Wellness'].map((tab) => (
+                    {['Luxury Stays', 'Beach Resorts', 'Eco-resorts', 'Wellness', 'Saved'].map((tab) => (
                         <TouchableOpacity 
                             key={tab} 
                             style={[
@@ -482,46 +492,97 @@ export default function HomeScreen() {
                     ))}
                 </ScrollView>
 
-                {/* Recommended Cards scroll */}
-                <ScrollView 
-                    horizontal 
-                    showsHorizontalScrollIndicator={false} 
-                    contentContainerStyle={styles.horizontalScrollContainer}
-                >
-                    {/* Card 1 */}
-                    <View style={styles.recomCard}>
-                        <View style={[styles.recomImageArea, { backgroundColor: '#EFECE6' }]}>
-                            <View style={styles.recomMatchBadgeRight}>
-                                <Text style={styles.recomMatchBadgeTextGold}>⚡ 92% match</Text>
-                            </View>
-                            <Feather name="image" size={32} color="#8A8378" />
+                {selectedTab === 'Saved' || (selectedTab === 'Saved' && savedOpportunitiesList.length === 0) ? (
+                    /* Figma Exact Empty State Card: No saved opportunities */
+                    <View style={styles.emptySavedCard}>
+                        <View style={styles.emptySavedIconCircle}>
+                            <Feather name="bookmark" size={28} color="#0E7A57" />
                         </View>
-                        <View style={styles.recomInfoArea}>
-                            <Text style={styles.recomTitle}>The Edge Villa</Text>
-                            <Text style={styles.recomSubtitle}>Uluwatu, Bali</Text>
-                            <TouchableOpacity style={styles.recomApplyBtn}>
-                                <Text style={styles.recomApplyBtnText}>Apply</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <Text style={styles.emptySavedTitle}>No saved opportunities</Text>
+                        <Text style={styles.emptySavedSubtitle}>
+                            Tap the bookmark on any listing to save it for later.
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.emptySavedBtn}
+                            onPress={() => router.push('/screens/Marketplace' as any)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.emptySavedBtnText}>Discover stays</Text>
+                        </TouchableOpacity>
                     </View>
+                ) : (
+                    /* Recommended Cards scroll */
+                    <ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false} 
+                        contentContainerStyle={styles.horizontalScrollContainer}
+                    >
+                        {recommendedList.length > 0 ? (
+                            recommendedList.map((item) => (
+                                <View key={item.id} style={styles.recomCard}>
+                                    <View style={[styles.recomImageArea, { backgroundColor: '#EFECE6' }]}>
+                                        <View style={styles.recomMatchBadgeRight}>
+                                            <Text style={styles.recomMatchBadgeTextGold}>⚡ {item.matchPercentage}% match</Text>
+                                        </View>
+                                        <Feather name="image" size={32} color="#8A8378" />
+                                    </View>
+                                    <View style={styles.recomInfoArea}>
+                                        <Text style={styles.recomTitle} numberOfLines={1}>{item.title}</Text>
+                                        <Text style={styles.recomSubtitle} numberOfLines={1}>{item.location}</Text>
+                                        <TouchableOpacity 
+                                            style={styles.recomApplyBtn}
+                                            onPress={() => router.push('/screens/Marketplace' as any)}
+                                        >
+                                            <Text style={styles.recomApplyBtnText}>Apply</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))
+                        ) : (
+                            <>
+                                {/* Card 1 */}
+                                <View style={styles.recomCard}>
+                                    <View style={[styles.recomImageArea, { backgroundColor: '#EFECE6' }]}>
+                                        <View style={styles.recomMatchBadgeRight}>
+                                            <Text style={styles.recomMatchBadgeTextGold}>⚡ 92% match</Text>
+                                        </View>
+                                        <Feather name="image" size={32} color="#8A8378" />
+                                    </View>
+                                    <View style={styles.recomInfoArea}>
+                                        <Text style={styles.recomTitle}>The Edge Villa</Text>
+                                        <Text style={styles.recomSubtitle}>Uluwatu, Bali</Text>
+                                        <TouchableOpacity 
+                                            style={styles.recomApplyBtn}
+                                            onPress={() => router.push('/screens/Marketplace' as any)}
+                                        >
+                                            <Text style={styles.recomApplyBtnText}>Apply</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                    {/* Card 2 */}
-                    <View style={styles.recomCard}>
-                        <View style={[styles.recomImageArea, { backgroundColor: '#ECE9E2' }]}>
-                            <View style={styles.recomMatchBadgeRight}>
-                                <Text style={styles.recomMatchBadgeTextGold}>⚡ 80% match</Text>
-                            </View>
-                            <Feather name="image" size={32} color="#8A8378" />
-                        </View>
-                        <View style={styles.recomInfoArea}>
-                            <Text style={styles.recomTitle}>Six Senses</Text>
-                            <Text style={styles.recomSubtitle}>Thimphu, Bhutan</Text>
-                            <TouchableOpacity style={styles.recomApplyBtn}>
-                                <Text style={styles.recomApplyBtnText}>Apply</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </ScrollView>
+                                {/* Card 2 */}
+                                <View style={styles.recomCard}>
+                                    <View style={[styles.recomImageArea, { backgroundColor: '#ECE9E2' }]}>
+                                        <View style={styles.recomMatchBadgeRight}>
+                                            <Text style={styles.recomMatchBadgeTextGold}>⚡ 80% match</Text>
+                                        </View>
+                                        <Feather name="image" size={32} color="#8A8378" />
+                                    </View>
+                                    <View style={styles.recomInfoArea}>
+                                        <Text style={styles.recomTitle}>Six Senses</Text>
+                                        <Text style={styles.recomSubtitle}>Thimphu, Bhutan</Text>
+                                        <TouchableOpacity 
+                                            style={styles.recomApplyBtn}
+                                            onPress={() => router.push('/screens/Marketplace' as any)}
+                                        >
+                                            <Text style={styles.recomApplyBtnText}>Apply</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </>
+                        )}
+                    </ScrollView>
+                )}
 
                 {/* 7. Quick Actions */}
                 <View style={styles.sectionHeaderRow}>
@@ -529,42 +590,60 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={styles.quickActionsGrid}>
-                    <TouchableOpacity style={styles.quickActionItem}>
+                    <TouchableOpacity 
+                        style={styles.quickActionItem}
+                        onPress={() => router.push('/screens/Discovery' as any)}
+                    >
                         <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
                             <Feather name="send" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>Analyze{"\n"}opportunities</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.quickActionItem}>
+                    <TouchableOpacity 
+                        style={styles.quickActionItem}
+                        onPress={() => router.push('/screens/Marketplace' as any)}
+                    >
                         <View style={[styles.quickActionIconWrapper, { backgroundColor: '#FAF2E6' }]}>
                             <Feather name="inbox" size={20} color="#E7B25C" />
                         </View>
                         <Text style={styles.quickActionLabel}>Submit{"\n"}deliverables</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.quickActionItem}>
+                    <TouchableOpacity 
+                        style={styles.quickActionItem}
+                        onPress={() => router.push('/screens/creatorProfileSetup' as any)}
+                    >
                         <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
                             <Feather name="grid" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>Create{"\n"}media kit</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.quickActionItem}>
+                    <TouchableOpacity 
+                        style={styles.quickActionItem}
+                        onPress={() => router.push('/screens/Discovery' as any)}
+                    >
                         <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
                             <Feather name="bar-chart-2" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>View{"\n"}analytics</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.quickActionItem}>
+                    <TouchableOpacity 
+                        style={styles.quickActionItem}
+                        onPress={() => router.push('/screens/Marketplace' as any)}
+                    >
                         <View style={[styles.quickActionIconWrapper, { backgroundColor: '#E8F1EC' }]}>
                             <Feather name="search" size={20} color="#0E7A57" />
                         </View>
                         <Text style={styles.quickActionLabel}>Find{"\n"}collaborations</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.quickActionItem}>
+                    <TouchableOpacity 
+                        style={styles.quickActionItem}
+                        onPress={() => router.push('/screens/Marketplace' as any)}
+                    >
                         <View style={[styles.quickActionIconWrapper, { backgroundColor: '#FAF2E6' }]}>
                             <Feather name="award" size={20} color="#E7B25C" />
                         </View>
@@ -575,115 +654,114 @@ export default function HomeScreen() {
                 {/* 8. Content Delivery */}
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionTitle}>CONTENT DELIVERY</Text>
-                    <TouchableOpacity>
-                        <Text style={styles.seeAllText}>All &gt;</Text>
-                    </TouchableOpacity>
+                    {deliverablesList.length > 0 && (
+                        <TouchableOpacity onPress={() => router.push('/screens/Marketplace' as any)}>
+                            <Text style={styles.seeAllText}>All &gt;</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                <View style={styles.contentDeliveryCard}>
-                    {/* Item 1 */}
-                    <View style={styles.contentItemRow}>
-                        <View style={[styles.contentThumbnail, { backgroundColor: '#EFECE6' }]} />
-                        <View style={styles.contentDetails}>
-                            <Text style={styles.contentTitle}>Aman Resorts</Text>
-                            <Text style={styles.contentProgressText}>Due in 2d • 2 of 3 uploaded</Text>
-                            <View style={styles.contentProgressBarBg}>
-                                <View style={[styles.contentProgressBarFillGold, { width: '66.6%' }]} />
-                            </View>
-                        </View>
-                        <View style={styles.contentActionArea}>
-                            <Text style={styles.contentPercentGold}>66%</Text>
-                        </View>
+                {deliverablesList.length > 0 ? (
+                    <View style={styles.contentDeliveryCard}>
+                        {deliverablesList.map((item, index) => (
+                            <React.Fragment key={item.id}>
+                                {index > 0 && <View style={styles.contentDivider} />}
+                                <View style={styles.contentItemRow}>
+                                    <View style={[styles.contentThumbnail, { backgroundColor: '#EFECE6' }]} />
+                                    <View style={styles.contentDetails}>
+                                        <Text style={styles.contentTitle}>{item.title}</Text>
+                                        <Text style={styles.contentProgressText}>{item.progressText}</Text>
+                                        <View style={styles.contentProgressBarBg}>
+                                            <View style={[styles.contentProgressBarFillGold, { width: `${item.percentage}%` }]} />
+                                        </View>
+                                    </View>
+                                    <View style={styles.contentActionArea}>
+                                        <Text style={styles.contentPercentGold}>{item.percentage}%</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity style={styles.contentUploadFullBtn}>
+                                    <Feather name="upload-cloud" size={14} color="#FFF" style={{ marginRight: 6 }} />
+                                    <Text style={styles.contentUploadFullBtnText}>Upload content</Text>
+                                </TouchableOpacity>
+                            </React.Fragment>
+                        ))}
                     </View>
-                    <TouchableOpacity style={styles.contentUploadFullBtn}>
-                        <Feather name="upload-cloud" size={14} color="#FFF" style={{ marginRight: 6 }} />
-                        <Text style={styles.contentUploadFullBtnText}>Upload content</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.contentDivider} />
-
-                    {/* Item 2 */}
-                    <View style={styles.contentItemRow}>
-                        <View style={[styles.contentThumbnail, { backgroundColor: '#ECE9E2' }]} />
-                        <View style={styles.contentDetails}>
-                            <Text style={styles.contentTitle}>Six Senses</Text>
-                            <Text style={styles.contentProgressText}>Due in 15d • Not started</Text>
-                            <View style={styles.contentProgressBarBg}>
-                                <View style={[styles.contentProgressBarFillGold, { width: '0%' }]} />
-                            </View>
+                ) : (
+                    /* Figma Exact Empty State Card: Nothing to upload */
+                    <View style={styles.emptyUploadCard}>
+                        <View style={styles.emptyUploadIconCircle}>
+                            <Feather name="upload-cloud" size={28} color="#C88E38" />
                         </View>
-                        <View style={styles.contentActionArea}>
-                            <Text style={[styles.contentPercentGold, { color: '#8A8378' }]}>0%</Text>
-                        </View>
+                        <Text style={styles.emptyUploadTitle}>Nothing to upload</Text>
+                        <Text style={styles.emptyUploadSubtitle}>
+                            {"You're all caught up — no deliverables are due right now."}
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.emptyUploadOutlineBtn}
+                            onPress={() => router.push('/screens/Marketplace' as any)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.emptyUploadOutlineBtnText}>View collaborations</Text>
+                        </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={styles.contentUploadOutlineBtn}>
-                        <Feather name="upload-cloud" size={14} color="#0E7A57" style={{ marginRight: 6 }} />
-                        <Text style={styles.contentUploadOutlineBtnText}>Upload content</Text>
-                    </TouchableOpacity>
-                </View>
+                )}
 
                 {/* 9. Messages */}
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionTitle}>MESSAGES</Text>
-                    <TouchableOpacity onPress={() => router.push('/screens/Inbox' as any)}>
-                        <Text style={styles.seeAllText}>Inbox &gt;</Text>
-                    </TouchableOpacity>
+                    {messagesList.length > 0 && (
+                        <TouchableOpacity onPress={() => router.push('/screens/Inbox' as any)}>
+                            <Text style={styles.seeAllText}>Inbox &gt;</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                <View style={styles.messagesCard}>
-                    {/* Message 1 */}
-                    <View style={styles.messageItem}>
-                        <View style={styles.messageAvatar}>
-                            <Text style={styles.messageAvatarText}>M</Text>
-                        </View>
-                        <View style={styles.messageContent}>
-                            <Text style={styles.messageSender}>Marina</Text>
-                            <Text style={styles.messagePreview} numberOfLines={1}>Can you confirm your check-in time?</Text>
-                        </View>
-                        <View style={styles.messageMeta}>
-                            <Text style={styles.messageTime}>5m</Text>
-                            <View style={styles.messageBadge}>
-                                <Text style={styles.messageBadgeText}>1</Text>
-                            </View>
-                        </View>
+                {messagesList.length > 0 ? (
+                    <View style={styles.messagesCard}>
+                        {messagesList.map((msg, index) => (
+                            <React.Fragment key={msg.id}>
+                                {index > 0 && <View style={styles.contentDivider} />}
+                                <View style={styles.messageItem}>
+                                    <View style={styles.messageAvatar}>
+                                        <Text style={styles.messageAvatarText}>{msg.senderInitial}</Text>
+                                    </View>
+                                    <View style={styles.messageContent}>
+                                        <Text style={styles.messageSender}>{msg.senderName}</Text>
+                                        <Text style={styles.messagePreview} numberOfLines={1}>{msg.preview}</Text>
+                                    </View>
+                                    <View style={styles.messageMeta}>
+                                        <Text style={styles.messageTime}>{msg.timeText}</Text>
+                                        {msg.unreadCount ? (
+                                            <View style={styles.messageBadge}>
+                                                <Text style={styles.messageBadgeText}>{msg.unreadCount}</Text>
+                                            </View>
+                                        ) : (
+                                            <Ionicons name="checkmark-done" size={16} color="#0E7A57" style={{ marginTop: 4 }} />
+                                        )}
+                                    </View>
+                                </View>
+                            </React.Fragment>
+                        ))}
                     </View>
-
-                    <View style={styles.contentDivider} />
-
-                    {/* Message 2 */}
-                    <View style={styles.messageItem}>
-                        <View style={styles.messageAvatar}>
-                            <Text style={styles.messageAvatarText}>D</Text>
+                ) : (
+                    /* Figma Exact Empty State Card: No messages yet */
+                    <View style={styles.emptyMsgCard}>
+                        <View style={styles.emptyMsgIconCircle}>
+                            <Feather name="message-square" size={28} color="#0E7A57" />
                         </View>
-                        <View style={styles.messageContent}>
-                            <Text style={styles.messageSender}>David - Soneva</Text>
-                            <Text style={styles.messagePreview} numberOfLines={1}>Looking forward to hosting you!</Text>
-                        </View>
-                        <View style={styles.messageMeta}>
-                            <Text style={styles.messageTime}>1h</Text>
-                            <View style={styles.messageBadge}>
-                                <Text style={styles.messageBadgeText}>1</Text>
-                            </View>
-                        </View>
+                        <Text style={styles.emptyMsgTitle}>No messages yet</Text>
+                        <Text style={styles.emptyMsgSubtitle}>
+                            When a host reaches out, your conversations appear here.
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.emptyMsgOutlineBtn}
+                            onPress={() => router.push('/screens/Marketplace' as any)}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.emptyMsgOutlineBtnText}>Explore hosts</Text>
+                        </TouchableOpacity>
                     </View>
-
-                    <View style={styles.contentDivider} />
-
-                    {/* Message 3 */}
-                    <View style={styles.messageItem}>
-                        <View style={styles.messageAvatar}>
-                            <Text style={styles.messageAvatarText}>A</Text>
-                        </View>
-                        <View style={styles.messageContent}>
-                            <Text style={styles.messageSender}>Aman PR</Text>
-                            <Text style={styles.messagePreview} numberOfLines={1}>Contract attached. Take a look.</Text>
-                        </View>
-                        <View style={styles.messageMeta}>
-                            <Text style={styles.messageTime}>3h</Text>
-                            <Ionicons name="checkmark-done" size={16} color="#0E7A57" style={{ marginTop: 4 }} />
-                        </View>
-                    </View>
-                </View>
+                )}
 
                 {/* 10. Your Analytics */}
                 <View style={styles.sectionHeaderRow}>
@@ -839,7 +917,10 @@ export default function HomeScreen() {
                         {/* Upload */}
                         <TouchableOpacity 
                             style={styles.overlayActionItem}
-                            onPress={closeMenu}
+                            onPress={() => {
+                                closeMenu();
+                                router.push('/screens/Marketplace' as any);
+                            }}
                         >
                             <View style={styles.actionLabelPill}>
                                 <Text style={styles.actionLabelText}>Upload</Text>
@@ -878,6 +959,23 @@ export default function HomeScreen() {
                             </View>
                             <View style={[styles.actionIconCircle, { backgroundColor: '#0E7A57', borderColor: '#0E7A57' }]}>
                                 <Ionicons name="sparkles" size={18} color="#FFF" />
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Sign Out */}
+                        <TouchableOpacity 
+                            style={styles.overlayActionItem}
+                            onPress={async () => {
+                                closeMenu();
+                                await supabase.auth.signOut();
+                                router.replace('/screens/login' as any);
+                            }}
+                        >
+                            <View style={[styles.actionLabelPill, { backgroundColor: '#FDEAE8', borderColor: '#FDEAE8' }]}>
+                                <Text style={[styles.actionLabelText, { color: '#D85C4B' }]}>Sign Out</Text>
+                            </View>
+                            <View style={[styles.actionIconCircle, { backgroundColor: '#D85C4B', borderColor: '#D85C4B' }]}>
+                                <Feather name="log-out" size={18} color="#FFF" />
                             </View>
                         </TouchableOpacity>
                     </Animated.View>
@@ -1375,6 +1473,310 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#F0EFEA',
         overflow: 'hidden',
+    },
+    emptyAppCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#EBECEB',
+        paddingVertical: 32,
+        paddingHorizontal: 24,
+        marginHorizontal: 20,
+        marginBottom: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    emptySavedCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#EBECEB',
+        paddingVertical: 32,
+        paddingHorizontal: 24,
+        marginHorizontal: 20,
+        marginBottom: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    emptySavedIconCircle: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#EDF4EE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptySavedTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1C1A17',
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: -0.3,
+    },
+    emptySavedSubtitle: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#7C756F',
+        textAlign: 'center',
+        lineHeight: 20,
+        maxWidth: 280,
+        alignSelf: 'center',
+        marginBottom: 24,
+    },
+    emptySavedBtn: {
+        backgroundColor: '#0E7A57',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#0E7A57',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    emptySavedBtnText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    emptyUploadCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#EBECEB',
+        paddingVertical: 32,
+        paddingHorizontal: 24,
+        marginHorizontal: 20,
+        marginBottom: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    emptyUploadIconCircle: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#FAF2E6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyUploadTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1C1A17',
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: -0.3,
+    },
+    emptyUploadSubtitle: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#7C756F',
+        textAlign: 'center',
+        lineHeight: 20,
+        maxWidth: 280,
+        alignSelf: 'center',
+        marginBottom: 24,
+    },
+    emptyUploadOutlineBtn: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#CFE3D8',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyUploadOutlineBtnText: {
+        color: '#0E7A57',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    emptyMsgCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#EBECEB',
+        paddingVertical: 32,
+        paddingHorizontal: 24,
+        marginHorizontal: 20,
+        marginBottom: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    emptyMsgIconCircle: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#EDF4EE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyMsgTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1C1A17',
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: -0.3,
+    },
+    emptyMsgSubtitle: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#7C756F',
+        textAlign: 'center',
+        lineHeight: 20,
+        maxWidth: 280,
+        alignSelf: 'center',
+        marginBottom: 24,
+    },
+    emptyMsgOutlineBtn: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#CFE3D8',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyMsgOutlineBtnText: {
+        color: '#0E7A57',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    emptyAppIconCircle: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#EDF4EE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyAppTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1C1A17',
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: -0.3,
+    },
+    emptyAppSubtitle: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#7C756F',
+        textAlign: 'center',
+        lineHeight: 20,
+        maxWidth: 280,
+        alignSelf: 'center',
+        marginBottom: 24,
+    },
+    emptyAppBtn: {
+        backgroundColor: '#0E7A57',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#0E7A57',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    emptyAppBtnText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    emptyCollabCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#EBECEB',
+        paddingVertical: 32,
+        paddingHorizontal: 24,
+        marginHorizontal: 20,
+        marginBottom: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    emptyCollabIconCircle: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#EDF4EE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyCollabTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1C1A17',
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: -0.3,
+    },
+    emptyCollabSubtitle: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#7C756F',
+        textAlign: 'center',
+        lineHeight: 20,
+        maxWidth: 280,
+        alignSelf: 'center',
+        marginBottom: 24,
+    },
+    emptyCollabBtn: {
+        backgroundColor: '#0E7A57',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#0E7A57',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    emptyCollabBtnText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
     },
     collabImageArea: {
         height: 120,

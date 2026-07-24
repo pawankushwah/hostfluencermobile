@@ -1,11 +1,12 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import Dropdown from '../../components/Dropdown';
+import { supabase } from '@/lib/supabase';
 
 const PROPERTY_TYPE_OPTIONS = [
     { label: 'Hotel', value: 'hotel' },
@@ -16,15 +17,80 @@ const PROPERTY_TYPE_OPTIONS = [
     { label: 'Other', value: 'other' }
 ];
 
+const COLLABORATION_TYPES = [
+    'Paid Stays',
+    'Content Creation',
+    'Social Media Posts',
+    'Photography',
+    'Video Content',
+    'Event Hosting',
+    'Long-term Partnerships'
+];
+
 export default function HostProfileSetupScreen() {
-    const [hostName, setHostName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [propertyName, setPropertyName] = useState('');
     const [propertyType, setPropertyType] = useState('');
     const [rooms, setRooms] = useState('');
+    const [minFollowerCount, setMinFollowerCount] = useState('1000');
     const [location, setLocation] = useState('');
     const [website, setWebsite] = useState('');
+    const [bio, setBio] = useState('');
+    const [collabTypes, setCollabTypes] = useState<string[]>(['Content Creation', 'Social Media Posts']);
 
     const [images, setImages] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const loadExistingHostData = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const metaFirstName = user.user_metadata?.first_name || '';
+            const metaLastName = user.user_metadata?.last_name || '';
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('first_name, last_name, location, bio')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (profile) {
+                setFirstName(profile.first_name || metaFirstName);
+                setLastName(profile.last_name || metaLastName);
+                setLocation(profile.location || '');
+                setBio(profile.bio || '');
+            } else {
+                setFirstName(metaFirstName);
+                setLastName(metaLastName);
+            }
+
+            const { data: host } = await supabase
+                .from('hosts')
+                .select('business_name, min_follower_count, preferred_collaboration_types')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (host) {
+                if (host.business_name) setPropertyName(host.business_name);
+                if (host.min_follower_count) setMinFollowerCount(String(host.min_follower_count));
+                if (host.preferred_collaboration_types && host.preferred_collaboration_types.length > 0) {
+                    setCollabTypes(host.preferred_collaboration_types);
+                }
+            }
+        };
+
+        loadExistingHostData();
+    }, []);
+
+    const toggleCollabType = (type: string) => {
+        setCollabTypes(prev =>
+            prev.includes(type)
+                ? (prev.length > 1 ? prev.filter(t => t !== type) : prev)
+                : [...prev, type]
+        );
+    };
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -49,19 +115,19 @@ export default function HostProfileSetupScreen() {
         setImages(prev => prev.filter(uri => uri !== uriToRemove));
     };
 
-    const handleContinue = () => {
-        const trimmedHostName = hostName.trim();
+    const handleContinue = async () => {
+        const trimmedFirstName = firstName.trim();
         const trimmedPropertyName = propertyName.trim();
         const trimmedRooms = rooms.trim();
         const trimmedLocation = location.trim();
 
-        if (!trimmedHostName) {
-            Alert.alert('Validation Error', 'Please enter the host name.');
+        if (!trimmedFirstName) {
+            Alert.alert('Validation Error', 'Please enter your first name.');
             return;
         }
 
         if (!trimmedPropertyName) {
-            Alert.alert('Validation Error', 'Please enter the property name.');
+            Alert.alert('Validation Error', 'Please enter the Business/Property name.');
             return;
         }
 
@@ -80,22 +146,81 @@ export default function HostProfileSetupScreen() {
             return;
         }
 
-        router.push('/screens/profileSuccess');
+        setLoading(true);
+        try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+            if (userError || !user) {
+                Alert.alert('Error', 'User session not found. Please log in again.');
+                setLoading(false);
+                return;
+            }
+
+            // 1. Upsert profiles table
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    first_name: trimmedFirstName,
+                    last_name: lastName.trim(),
+                    location: trimmedLocation,
+                    bio: bio.trim(),
+                    user_type: 'host',
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'id' });
+
+            if (profileError) {
+                console.error('Error upserting profiles:', profileError);
+                throw profileError;
+            }
+
+            // 2. Upsert hosts table
+            const { error: hostError } = await supabase
+                .from('hosts')
+                .upsert({
+                    id: user.id,
+                    business_name: trimmedPropertyName,
+                    min_follower_count: parseInt(minFollowerCount, 10) || 1000,
+                    preferred_collaboration_types: collabTypes,
+                    verification_status: 'unverified',
+                }, { onConflict: 'id' });
+
+            if (hostError) {
+                console.error('Error upserting hosts:', hostError);
+                throw hostError;
+            }
+
+            router.push('/screens/profileSuccess');
+        } catch (error: any) {
+            Alert.alert('Submission Error', error.message || 'Failed to save host details. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-            <View style={styles.headerContainer}>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <Feather name="arrow-left" size={24} color="#0B1C30" />
-                </Pressable>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <View style={styles.headerContainer}>
+                    <Pressable onPress={() => router.back()} style={styles.backButton}>
+                        <Feather name="arrow-left" size={24} color="#0B1C30" />
+                    </Pressable>
 
-                <Text style={styles.headerTitle}>Hostfluencer</Text>
+                    <Text style={styles.headerTitle}>Hostfluencer</Text>
 
-                <View style={{ width: 24 }} />
-            </View>
+                    <View style={{ width: 24 }} />
+                </View>
 
-            <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Tell us about your{'\n'}property</Text>
                     <Text style={styles.subtitle}>{"Let's set up your profile so influencers can find you."}</Text>
@@ -103,24 +228,37 @@ export default function HostProfileSetupScreen() {
 
                 {/* Card 1: Basic Info */}
                 <View style={styles.card}>
-                    {/* Host Name */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Host Name</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="e.g. Jane Doe"
-                            placeholderTextColor="#889A92"
-                            value={hostName}
-                            onChangeText={setHostName}
-                        />
+                    {/* First Name & Last Name */}
+                    <View style={styles.inputRow}>
+                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                            <Text style={styles.label}>First Name *</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Jane"
+                                placeholderTextColor="#889A92"
+                                value={firstName}
+                                onChangeText={setFirstName}
+                            />
+                        </View>
+
+                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                            <Text style={styles.label}>Last Name</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Doe"
+                                placeholderTextColor="#889A92"
+                                value={lastName}
+                                onChangeText={setLastName}
+                            />
+                        </View>
                     </View>
 
-                    {/* Property Name */}
+                    {/* Property / Business Name */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Property Name</Text>
+                        <Text style={styles.label}>Business / Property Name *</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="e.g. The Grand View Resort"
+                            placeholder="e.g. Sunset Villa Properties"
                             placeholderTextColor="#889A92"
                             value={propertyName}
                             onChangeText={setPropertyName}
@@ -141,7 +279,7 @@ export default function HostProfileSetupScreen() {
 
                     {/* Number of Rooms */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Number of Rooms</Text>
+                        <Text style={styles.label}>Number of Rooms *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="e.g. 12"
@@ -151,18 +289,31 @@ export default function HostProfileSetupScreen() {
                             onChangeText={setRooms}
                         />
                     </View>
+
+                    {/* Minimum Follower Count */}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Minimum Follower Count</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="1000"
+                            placeholderTextColor="#889A92"
+                            keyboardType="numeric"
+                            value={minFollowerCount}
+                            onChangeText={setMinFollowerCount}
+                        />
+                    </View>
                 </View>
 
-                {/* Card 2: Location & Web */}
+                {/* Card 2: Location & Web & Preferences */}
                 <View style={styles.card}>
                     {/* Location */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Location</Text>
+                        <Text style={styles.label}>Location *</Text>
                         <View style={styles.inputWithIconContainer}>
                             <Feather name="map-pin" size={18} color="#3C4A42" style={styles.inputIcon} />
                             <TextInput
                                 style={styles.inputWithIcon}
-                                placeholder="City, Country or Full Address"
+                                placeholder="Miami, Florida"
                                 placeholderTextColor="#889A92"
                                 value={location}
                                 onChangeText={setLocation}
@@ -184,6 +335,27 @@ export default function HostProfileSetupScreen() {
                                 value={website}
                                 onChangeText={setWebsite}
                             />
+                        </View>
+                    </View>
+
+                    {/* Preferred Collaboration Types */}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Preferred Collaboration Types</Text>
+                        <View style={styles.chipRow}>
+                            {COLLABORATION_TYPES.map(type => {
+                                const isSelected = collabTypes.includes(type);
+                                return (
+                                    <Pressable
+                                        key={type}
+                                        style={[styles.chip, isSelected && styles.chipActive]}
+                                        onPress={() => toggleCollabType(type)}
+                                    >
+                                        <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                                            {type}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
                         </View>
                     </View>
                 </View>
@@ -222,13 +394,21 @@ export default function HostProfileSetupScreen() {
 
             <View style={styles.bottomBar}>
                 <Pressable
-                    style={styles.continueButton}
+                    style={[styles.continueButton, loading && { opacity: 0.7 }]}
                     onPress={handleContinue}
+                    disabled={loading}
                 >
-                    <Text style={styles.continueButtonText}>Continue</Text>
-                    <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />
+                    {loading ? (
+                        <ActivityIndicator color="#FFF" />
+                    ) : (
+                        <>
+                            <Text style={styles.continueButtonText}>Continue</Text>
+                            <Feather name="arrow-right" size={20} color="#FFF" style={{ marginLeft: 8 }} />
+                        </>
+                    )}
                 </Pressable>
             </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -295,6 +475,36 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
+    },
+    inputRow: {
+        flexDirection: 'row',
+        width: '100%',
+    },
+    chipRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 4,
+    },
+    chip: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#F0F4F2',
+        borderWidth: 1,
+        borderColor: '#E0E7E3',
+    },
+    chipActive: {
+        backgroundColor: '#0D2C21',
+        borderColor: '#0D2C21',
+    },
+    chipText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#3C4A42',
+    },
+    chipTextActive: {
+        color: '#FFFFFF',
     },
     inputGroup: {
         marginBottom: 16,

@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ResetPasswordScreen() {
@@ -35,28 +35,33 @@ export default function ResetPasswordScreen() {
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-            <View style={styles.headerBar}>
-                <Pressable
-                    style={styles.backButton}
-                    onPress={() => {
-                        if (router.canGoBack()) {
-                            router.back();
-                        } else {
-                            router.push('/screens/login');
-                        }
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <Feather name="chevron-left" size={20} color="#1C1A17" />
-                </Pressable>
-            </View>
-
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
+                <View style={styles.headerBar}>
+                    <Pressable
+                        style={styles.backButton}
+                        onPress={() => {
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                router.push('/screens/login');
+                            }
+                        }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Feather name="chevron-left" size={20} color="#1C1A17" />
+                    </Pressable>
+                </View>
+
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                 <View style={styles.contentContainer}>
                     {/* Green Lock Icon Box */}
                     <View style={styles.lockIconBox}>
@@ -113,6 +118,7 @@ export default function ResetPasswordScreen() {
                     </Pressable>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
